@@ -1,37 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CC Conductores</title>
-<style>
-:root{--azul:#0A1931;--verde:#16A34A;--naranja:#FF7A00}*{box-sizing:border-box;font-family:Inter,sans-serif}
-body{margin:0;background:#F8FAFC;color:var(--azul)}
-.header{background:var(--azul);color:#C5A880;padding:12px;display:flex;gap:10px;font-weight:900;position:sticky;top:0}
-.badge{margin-left:auto;background:#E0F2FE;color:var(--azul);padding:5px 12px;border-radius:20px;font-size:12px}
-.serv{background:#fff;border-radius:16px;padding:14px;margin:10px;box-shadow:0 2px 12px rgba(0,0,0,.07);border-left:5px solid var(--naranja)}
-.btn-verde{background:var(--verde);color:#fff;border:0;border-radius:12px;padding:13px;width:100%;font-weight:800;margin-top:10px}
-</style>
-</head>
-<body>
-<div class="header"><div class="logo">CC</div> DRIVERS<span class="badge" id="count">0 activos</span></div>
-<div id="lista">Conectando...</div>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Conductores</title>
+<style>body{font-family:sans-serif;background:#111;color:#fff;margin:0;padding:10px}.card{background:#222;padding:15px;border-radius:12px;margin:10px 0;border-left:5px solid #facc15}button{padding:10px;border:0;border-radius:8px;font-weight:bold;margin-top:5px}.tomar{background:#22c55e}#lista{max-width:600px;margin:auto}</style></head><body><h1 style="text-align:center">🚕 Panel Conductores PRUEBA</h1><div id="lista">Cargando...</div>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-const firebaseConfig = { apiKey: "TU_API_KEY_AQUI", authDomain: "cc-drivers.firebaseapp.com", projectId: "cc-drivers" };
-const app = initializeApp(firebaseConfig); const db = getFirestore(app);
-const q = query(collection(db,"servicios"), where("estado","==","nuevo"));
-onSnapshot(q, (snap)=>{
-  document.getElementById("count").innerText=snap.size+" activos";
-  let html=""; if(snap.empty) html="<div style='text-align:center;margin-top:40px'>No hay servicios</div>";
-  snap.forEach(d=>{ let s=d.data(); html+=`<div class="serv"><b>${s.tipo}</b> - ${s.hora}<br>${s.origen} → ${s.destino}<br><small>${s.nombre} - ${s.telefono}<br>${s.desc}</small><button class="btn-verde" onclick="aceptar('${d.id}','${s.telefono}','${s.nombre}','${s.origen}','${s.destino}','${s.hora}','${s.tipo}')">Aceptar y WhatsApp</button></div>`; });
-  document.getElementById("lista").innerHTML=html;
-});
-window.aceptar=async(id,tel,nom,ori,des,hor,tip)=>{
-  let msg=`Hola ${nom}, soy tu conductor asignado de CC DRIVERS. Servicio de ${ori} a ${des} a las ${hor}. Tipo: ${tip}. Voy en camino.`;
-  window.open(`https://wa.me/52${tel.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,"_blank");
-  await deleteDoc(doc(db,"servicios",id));
-};
-</script>
-</body>
-</html>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
+const app=initializeApp(firebaseConfig);const db=getFirestore(app);
+const lista=document.getElementById('lista');
+const q=query(collection(db,"servicios_prueba"),where("estado","==","pendiente"));
+onSnapshot(q,(s)=>{if(s.empty){lista.innerHTML='Sin viajes';return}lista.innerHTML='';s.forEach(docu=>{const v=docu.data();const div=document.createElement('div');div.className='card';div.innerHTML=`<b>${v.cliente}</b> - ${v.telefono}<br>De: ${v.origen}<br>A: ${v.destino}<br><button class="tomar">Tomar viaje</button>`;div.querySelector('.tomar').onclick=async()=>{await updateDoc(doc(db,"servicios_prueba",docu.id),{estado:"tomado"})};lista.prepend(div)})});
+</script></body></html></html>
