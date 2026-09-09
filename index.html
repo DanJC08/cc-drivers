@@ -1,40 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CC Usuarios</title>
-<!--<script src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY_AQUI&libraries=places&language=es&region=MX"></script-->
-<style>
-:root{--azul:#0A1931;--naranja:#FF7A00}
-*{box-sizing:border-box;font-family:Inter,sans-serif}
-body{margin:0;background:#F8FAFC;color:var(--azul);padding-bottom:20px}
-.header{background:var(--azul);color:#C5A880;padding:12px 14px;display:flex;gap:10px;font-weight:900;position:sticky;top:0}
-.logo{width:38px;height:38px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--azul);border:2px solid #C5A880;font-weight:900}
-
-/* ESTILO EXACTO DE TU IMAGEN */
-.search-pill{background:#fff;border-radius:999px;padding:18px 22px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin:12px 14px;cursor:text}
-.search-pill .icon{font-size:22px;opacity:.6}
-.search-pill input{flex:1;border:0;outline:0;font-size:17px;color:#6B7280;background:transparent}
-.search-pill input::placeholder{color:#6B7280}
-
-.form-box{background:#fff;margin:14px;border-radius:20px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
-.form-box input.normal,.form-box select,.form-box textarea{width:100%;padding:14px;margin:8px 0;border:1px solid #D1D5DB;border-radius:12px;background:#F9FAFB;font-size:14px}
-.btn{border:0;border-radius:16px;padding:16px;font-weight:800;color:#fff;width:100%;margin-top:10px;cursor:pointer}
-.btn-naranja{background:var(--naranja)}
-.label{font-size:12px;font-weight:700;margin-top:8px;display:block;opacity:.8}
-.grid2{display:flex;gap:10px} .grid2>*{flex:1}
-</style>
-</head>
-<body>
-<div class="header"><div class="logo">CC</div> DRIVERS</div>
-
-<div class="form-box">
-  <h3 style="margin:0 0 14px">Solicitar servicio</h3>
-
-  <!-- ORIGEN CON TU ESTILO DE PASTILLA -->
-  <label class="label">Origen</label>
-  <div class="search-pill" onclick="document.getElementById('origen').focus()">
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>CC Drivers - Cliente</title>
+<style>body{font-family:sans-serif;background:#f5f5f5;margin:0;padding:15px}.card{max-width:480px;margin:auto;background:white;padding:20px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.1)}h1{text-align:center}input{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:10px;font-size:16px;box-sizing:border-box}button{width:100%;padding:14px;background:#000;color:#fff;border:0;border-radius:12px;font-size:18px;font-weight:bold;margin-top:10px}#estado{margin-top:15px;padding:12px;border-radius:10px;display:none;text-align:center}.wait{background:#fef3c7}</style></head><body><div class="card"><h1>🚗 CC Drivers</h1><p style="text-align:center;color:#666">Solicita tu viaje - PRUEBA</p><input id="nombre" placeholder="Tu nombre"><input id="telefono" placeholder="WhatsApp"><input id="origen" placeholder="Origen"><input id="destino" placeholder="Destino"><button id="btn">Solicitar Viaje</button><div id="estado"></div><p style="text-align:center;margin-top:15px"><a href="conductores.html">Panel conductores</a></p></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
+const app=initializeApp(firebaseConfig);const db=getFirestore(app);
+document.getElementById('btn').onclick=async()=>{
+ const n=document.getElementById('nombre').value,o=document.getElementById('origen').value,d=document.getElementById('destino').value,t=document.getElementById('telefono').value;
+ if(!n||!o||!d){alert('Llena los datos');return}
+ try{await addDoc(collection(db,"servicios_prueba"),{cliente:n,telefono:t,origen:o,destino:d,estado:"pendiente",creado:serverTimestamp()});document.getElementById('estado').style.display='block';document.getElementById('estado').className='wait';document.getElementById('estado').innerHTML='✅ Viaje enviado a conductores';}catch(e){alert(e.message)}
+};
+</script></body></html>  <div class="search-pill" onclick="document.getElementById('origen').focus()">
     <span class="icon">🔍</span>
     <input id="origen" placeholder="¿Dónde te recogemos?">
   </div>
