@@ -2,144 +2,75 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CC Usuarios</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>CC DRIVERS</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI&libraries=places&language=es&region=MX"></script>
 <style>
-:root{--azul:#0A1931;--naranja:#FF7A00;--bg:#F5F5F7}
-*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,sans-serif;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);display:flex;justify-content:center;min-height:100vh}
-.iphone{width:100%;max-width:430px;background:var(--bg);min-height:100vh;position:relative;box-shadow:0 0 0 1px #e5e5e5,0 20px 60px rgba(0,0,0,.15);overflow:hidden}
-@media(min-width:500px){.iphone{border-radius:48px;margin:20px 0;min-height:calc(100vh - 40px);border:8px solid #111} .iphone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#111;border-radius:0 0 18px 18px;z-index:20}}
-.header{background:var(--azul);color:#C5A880;padding:18px 20px 16px;display:flex;gap:12px;font-weight:900;align-items:center}
-.logo{width:40px;height:40px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--azul);border:2px solid #C5A880;font-weight:900;font-size:14px}
-.content{padding:20px 16px 100px}
-.title{font-size:28px;font-weight:800;letter-spacing:-.8px;margin:8px 4px 18px;line-height:1.1}.title span{color:var(--naranja)}
-.search-pill{background:#fff;border-radius:16px;padding:18px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);margin:12px 0;border:1px solid rgba(0,0,0,.06);transition:all .2s;position:relative}
-.search-pill:focus-within{box-shadow:0 0 0 4px rgba(10,25,49,.1);border-color:var(--azul)}
-.search-pill .icon{width:32px;height:32px;background:#F5F5F7;border-radius:8px;display:flex;align-items:center;justify-content:center}
-.search-pill input{border:0;outline:0;width:100%;font-size:17px;font-weight:500;background:transparent;color:var(--azul)}
-.pac-container{border-radius:14px!important;margin-top:8px;box-shadow:0 10px 30px rgba(0,0,0,.15)!important;border:0!important;font-family:-apple-system!important}
-.pac-item{padding:12px 16px!important;font-size:15px!important}
-.card-data{background:#fff;border-radius:20px;padding:6px 6px 14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);margin-top:16px}
-.card-data input{width:100%;padding:16px 18px;border:0;border-bottom:1px solid #F2F2F7;outline:0;font-size:17px}
-.btn-main{width:calc(100% - 12px);margin:14px 6px 0;padding:18px;background:#111;color:#fff;border:0;border-radius:14px;font-size:17px;font-weight:700}
-.btn-main:active{transform:scale(.97)} .btn-main:disabled{opacity:.6}
-#estado{margin:12px 6px 0;padding:14px;border-radius:12px;display:none;text-align:center;font-weight:600}
-.ok{background:#FEF3C7;color:#92400E;display:block!important}
-.tab-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.08);padding:12px 20px 30px;display:flex;justify-content:center}
-.tab-bar a{color:var(--azul);text-decoration:none;font-size:13px;font-weight:600;opacity:.6}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#F2F2F7;display:flex;justify-content:center;min-height:100vh;width:100%;overflow-x:hidden}
+.iphone{width:100%;max-width:430px;background:#F2F2F7;min-height:100vh;position:relative}
+.header{background:#0A1931;color:#C5A880;padding:16px 20px;display:flex;align-items:center;gap:12px;font-weight:900;height:64px}
+.logo{width:38px;height:38px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#0A1931;border:2px solid #C5A880;font-size:13px;font-weight:900;flex-shrink:0}
+.content{padding:24px 16px 100px;width:100%}
+.tit{font-size:32px;font-weight:800;line-height:.95;letter-spacing:-1px;margin-bottom:20px;color:#0A1931}
+.tit span{color:#FF7A00}
+.pill{background:#fff;width:100%;border-radius:18px;padding:0 16px;height:62px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:12px;border:1px solid rgba(0,0,0,.05)}
+.pill .ic{width:32px;height:32px;background:#F2F2F7;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.pill input{border:0;outline:0;width:100%;font-size:17px;font-weight:500;background:transparent;color:#0A1931;height:100%}
+.card{background:#fff;width:100%;border-radius:20px;padding:10px;box-shadow:0 4px 20px rgba(0,0,0,.06);margin-top:10px}
+.card input{width:100%;border:0;border-bottom:1px solid #F2F2F7;padding:18px 12px;outline:0;font-size:17px;background:transparent}
+.card input:last-of-type{border:0}
+.btn{width:100%;height:56px;background:#111;color:#fff;border:0;border-radius:14px;font-size:17px;font-weight:700;margin-top:12px}
+.btn:active{transform:scale(.98)}
+#estado{margin-top:12px;padding:12px;border-radius:10px;text-align:center;font-weight:600;display:none;font-size:14px}
+.ok{background:#FFF7D1;color:#7a5d00;display:block!important}
+.pac-container{border-radius:14px!important;box-shadow:0 10px 30px rgba(0,0,0,.2)!important;border:0!important;z-index:9999!important}
 </style>
 </head>
 <body>
 <div class="iphone">
   <div class="header"><div class="logo">CC</div> CC DRIVERS</div>
   <div class="content">
-    <div class="title">¿A dónde <br><span>vamos hoy?</span></div>
-    <div class="search-pill"><div class="icon">●</div><input id="origen" placeholder="¿Dónde te recogemos?"></div>
-    <div class="search-pill"><div class="icon">📍</div><input id="destino" placeholder="¿A dónde vas?"></div>
-    <div class="card-data">
-      <input id="nombre" placeholder="Tu nombre" autocomplete="name">
-      <input id="telefono" placeholder="WhatsApp">
-      <button id="btn" class="btn-main">Solicitar Viaje</button>
+    <div class="tit">¿A dónde<br><span>vamos hoy?</span></div>
+    
+    <div class="pill"><div class="ic">●</div><input id="origen" placeholder="¿Dónde te recogemos?"></div>
+    <div class="pill"><div class="ic">📍</div><input id="destino" placeholder="¿A dónde vas?"></div>
+
+    <div class="card">
+      <input id="nombre" placeholder="Tu nombre" value="Daniel">
+      <input id="telefono" placeholder="WhatsApp" value="33191736" inputmode="numeric">
+      <button id="btn" class="btn">Solicitar Viaje</button>
       <div id="estado"></div>
     </div>
   </div>
-  <div class="tab-bar"><a href="conductores.html">Panel conductores →</a></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
-const app=initializeApp(firebaseConfig); const db=getFirestore(app);
+const db=getFirestore(initializeApp(firebaseConfig));
 
-// --- GOOGLE PLACES ---
 function initPlaces(){
-  const opts={componentRestrictions:{country:'mx'},fields:['formatted_address','geometry','name'],types:['geocode']};
-  const autoOrigen=new google.maps.places.Autocomplete(document.getElementById('origen'),opts);
-  const autoDestino=new google.maps.places.Autocomplete(document.getElementById('destino'),opts);
-  autoOrigen.addListener('place_changed',()=>{const p=autoOrigen.getPlace(); if(p.formatted_address) document.getElementById('origen').value=p.formatted_address;});
-  autoDestino.addListener('place_changed',()=>{const p=autoDestino.getPlace(); if(p.formatted_address) document.getElementById('destino').value=p.formatted_address;});
+  const o={componentRestrictions:{country:'mx'},fields:['formatted_address','name'],types:['geocode']};
+  const aO=new google.maps.places.Autocomplete(document.getElementById('origen'),o);
+  const aD=new google.maps.places.Autocomplete(document.getElementById('destino'),o);
+  aO.addListener('place_changed',()=>{const p=aO.getPlace(); if(p.formatted_address) origen.value=p.formatted_address;});
+  aD.addListener('place_changed',()=>{const p=aD.getPlace(); if(p.formatted_address) destino.value=p.formatted_address;});
 }
 initPlaces();
 
-const btn=document.getElementById('btn'); const estado=document.getElementById('estado');
+const btn=document.getElementById('btn'), estado=document.getElementById('estado');
 btn.onclick=async()=>{
- const n=document.getElementById('nombre').value.trim()||'Cliente';
- const t=document.getElementById('telefono').value.trim();
- const o=document.getElementById('origen').value.trim();
- const d=document.getElementById('destino').value.trim();
- if(!o||!d){estado.style.display='block';estado.className='ok';estado.textContent='⚠️ Pon origen y destino (Google)';return}
- btn.disabled=true; btn.textContent='Enviando...';
- try{
-   await addDoc(collection(db,"servicios_prueba"),{cliente:n,telefono:t,origen:o,destino:d,estado:"pendiente",creado:serverTimestamp(),origen_google:o,destino_google:d});
-   estado.style.display='block'; estado.className='ok'; estado.textContent='✅ Viaje enviado con Google Places';
-   btn.textContent='¡Enviado!';
- }catch(e){alert(e.message); btn.disabled=false; btn.textContent='Solicitar Viaje';}
-};
-</script>
-</body>
-</html>  </div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
-
-document.getElementById('btn').onclick=async()=>{
- const n=document.getElementById('nombre').value.trim();
- const t=document.getElementById('telefono').value.trim();
- const o=document.getElementById('origen').value.trim();
- const d=document.getElementById('destino').value.trim();
- if(!n||!o||!d){alert('Llena origen, destino y nombre');return}
- const btn=document.getElementById('btn');
- btn.disabled=true; btn.textContent='Enviando...';
- try{
-   await addDoc(collection(db,"servicios_prueba"),{
-     cliente:n,telefono:t,origen:o,destino:d,
-     estado:"pendiente",creado:serverTimestamp()
-   });
-   const e=document.getElementById('estado');
-   e.style.display='block'; e.className='ok'; e.innerHTML='✅ Viaje enviado a conductores';
-   btn.textContent='Viaje Enviado';
- }catch(err){alert(err.message); btn.disabled=false; btn.textContent='Solicitar Viaje';}
-};
-</script>
-</body>
-</html>
-  <label class="label">Detalles</label>
-  <textarea id="desc" rows="4" placeholder="Describe tu servicio..."></textarea>
-
-  <button class="btn btn-naranja" onclick="enviar()">Solicitar</button>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-const firebaseConfig = { apiKey: "TU_API_KEY_AQUI", authDomain: "cc-drivers.firebaseapp.com", projectId: "cc-drivers" };
-const app = initializeApp(firebaseConfig); const db = getFirestore(app);
-const $=id=>document.getElementById(id);
-
-function initMaps(){
-  const opts={componentRestrictions:{country:"mx"},fields:["formatted_address","name"]};
-  new google.maps.places.Autocomplete($("origen"),opts).addListener("place_changed",function(){ $("origen").value=this.getPlace().formatted_address||this.getPlace().name; });
-  new google.maps.places.Autocomplete($("destino"),opts).addListener("place_changed",function(){ $("destino").value=this.getPlace().formatted_address||this.getPlace().name; });
-}
-window.onload=()=>{ initMaps();
-  $("nombre").value=localStorage.getItem("cc_nombre")||"";
-  $("telefono").value=localStorage.getItem("cc_tel")||"";
-  $("origen").value=localStorage.getItem("cc_origen")||"";
-};
-window.enviar=async()=>{
-  const data={ origen:$("origen").value, destino:$("destino").value, nombre:$("nombre").value, telefono:$("telefono").value, tipo:$("tipo").value, desc:$("desc").value, estado:"nuevo", createdAt: serverTimestamp() };
-  if(!data.origen||!data.destino||!data.telefono||!data.nombre||!data.tipo) return alert("Completa todos los campos");
-  localStorage.setItem("cc_nombre",data.nombre); localStorage.setItem("cc_tel",data.telefono); localStorage.setItem("cc_origen",data.origen);
-  await addDoc(collection(db,"servicios"), data);
-  alert("¡Solicitud enviada! Te contactamos por WhatsApp");
+  const n=nombre.value.trim()||'Cliente', t=telefono.value.trim(), o=origen.value.trim(), d=destino.value.trim();
+  if(!o||!d){estado.className='ok';estado.style.display='block';estado.textContent='⚠️ Escribe origen y destino';return}
+  btn.disabled=true; btn.textContent='Enviando...';
+  try{
+    await addDoc(collection(db,"servicios_prueba"),{cliente:n,telefono:t,origen:o,destino:d,estado:"pendiente",creado:serverTimestamp()});
+    estado.className='ok';estado.style.display='block';estado.textContent='✅ Viaje enviado';
+    btn.textContent='¡Enviado!';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='Solicitar Viaje';},2000);
+  }catch(e){alert(e.message);btn.disabled=false;btn.textContent='Solicitar Viaje';}
 };
 </script>
 </body>
