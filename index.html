@@ -115,7 +115,7 @@ btn.onclick=async()=>{
   btn.disabled=true; btn.textContent='Enviando...';
   try{
     await addDoc(collection(db,"servicios_prueba"),{cliente:n,telefono:tel,origen:o,destino:d,estado:"pendiente",creado:serverTimestamp()});
-    estado.innerHTML='✅ Solicitud enviada<br><span style="font-weight:400;font-size:13px;display:block;margin-top:4px">Recibirás un WhatsApp cuando se acepte tu solicitud.</span>';
+    estado.innerHTML='✅ Solicitud enviada<br><span style="font-weight:400;font-size:13px;display:block;margin-top:4px">Recibirás un mensaje de WhatsApp cuando se acepte tu solicitud.</span>';
     estado.className='ok'; estado.style.display='block'; btn.textContent='¡Enviado!';
     setTimeout(()=>{btn.disabled=false;btn.textContent='Solicitar Viaje';},3000);
   }catch(e){alert(e.message);btn.disabled=false;btn.textContent='Solicitar Viaje';}
