@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Conductores</title>
+<style>
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif}
+body{margin:0;background:#F5F5F7;display:flex;justify-content:center;min-height:100vh}
+.card{width:100%;max-width:430px;background:#fff;margin:20px;border-radius:24px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+input{width:100%;padding:14px;border:1px solid #E5E5EA;border-radius:12px;margin:8px 0;font-size:16px}
+button{width:100%;padding:16px;background:#0A1931;color:#C5A880;border:0;border-radius:14px;font-weight:800;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>CC Conductores</h1><p style="color:#8E8E93">Inicia sesión</p>
+<input id="correo" placeholder="Correo">
+<input id="pass" placeholder="Contraseña" type="password">
+<button id="btn">Entrar</button>
+<a href="registro-conductores.html" style="display:block;text-align:center;margin-top:14px;font-size:13px;color:#0A1931">Crear cuenta</a>
+<div id="msg" style="margin-top:12px;font-size:13px"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
+const app=initializeApp(firebaseConfig); const auth=getAuth(app); const db=getFirestore(app);
+
+document.getElementById('btn').onclick=async()=>{
+ try{
+  const cred=await signInWithEmailAndPassword(auth, document.getElementById('correo').value, document.getElementById('pass').value);
+  const snap=await getDoc(doc(db,"conductores",cred.user.uid));
+  if(!snap.exists()){ document.getElementById('msg').textContent="No tienes perfil de conductor"; return; }
+  const data=snap.data();
+  if(data.estado==="pendiente"){ document.getElementById('msg').innerHTML="<b style='color:orange'>⏳ Tu cuenta está pendiente de aprobación por el administrador</b>"; return; }
+  if(data.estado==="bloqueado"){ document.getElementById('msg').innerHTML="<b style='color:red'>🚫 Cuenta bloqueada</b>"; return; }
+  // aprobado
+  localStorage.setItem("uidConductor",cred.user.uid);
+  localStorage.setItem("nombreConductor",data.nombre);
+  window.location.href="conductores.html";
+ }catch(e){ alert(e.message); }
+}
+</script>
+</body>
+</html>

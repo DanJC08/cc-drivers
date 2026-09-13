@@ -9,7 +9,6 @@
 :root{--azul:#0A1931;--naranja:#FF7A00;--bg:#F5F5F7}
 body{margin:0;background:var(--bg);display:flex;justify-content:center;min-height:100vh}
 .iphone{width:100%;max-width:430px;background:var(--bg);min-height:100vh;position:relative;box-shadow:0 0 0 1px #e5e5e5, 0 20px 60px rgba(0,0,0,.15);overflow:hidden}
-@media(min-width:500px){.iphone{border-radius:48px;margin:20px 0;min-height:calc(100vh - 40px);border:8px solid #111} .iphone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#111;border-radius:0 0 18px 18px;z-index:20}}
 .header{background:var(--azul);color:#C5A880;padding:18px 20px 16px;display:flex;justify-content:space-between;align-items:center}
 .logo{width:40px;height:40px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--azul);border:2px solid #C5A880;font-weight:900;font-size:14px}
 .content{padding:16px 16px 100px}
@@ -20,82 +19,140 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 .dot{width:8px;height:8px;background:#34C759;border-radius:50%;animation:blink 1.2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 .badge{background:var(--naranja);color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800}
-.card{background:#fff;border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04);animation:entra .35s cubic-bezier(.2,.8,.2,1)}
+.card{background:#fff;border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04);animation:entra.35s}
 @keyframes entra{from{transform:translateY(16px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
-.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
 .cliente{font-weight:800;font-size:17px}
 .tel{font-size:13px;color:#8E8E93;background:#F5F5F7;padding:4px 8px;border-radius:8px}
+.hora-pill{font-size:12px;font-weight:800;padding:6px 10px;border-radius:20px;display:inline-block;margin-bottom:10px}
+.prog{background:#FFF7D1;color:#7a5a00;border:1px solid #FFE58F}
+.ahora{background:#E6FFF0;color:#0a7a2f;border:1px solid #b6f5c6}
+.dist-tag{background:#0A1931;color:#C5A880;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px}
+.dist-tag2{background:#FF7A00;color:#fff;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px}
+.precio-box{background:#111;color:#fff;border-radius:14px;padding:12px 14px;margin-top:12px}
+.precio-box b{font-size:22px;color:#C5A880}
 .ruta{position:relative;padding-left:28px}
 .ruta::before{content:'';position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:repeating-linear-gradient(to bottom, #D1D1D6 0 4px, transparent 4px 8px)}
-.line{display:flex;gap:10px;margin:10px 0;align-items:flex-start}
+.line{display:flex;gap:10px;margin:14px 0;align-items:flex-start}
 .dot-o{width:16px;height:16px;background:var(--azul);border-radius:50%;border:3px solid #E5EFFF;flex-shrink:0;margin-top:2px}
 .dot-d{width:16px;height:16px;background:var(--naranja);border-radius:50%;border:3px solid #FFEAD1;flex-shrink:0;margin-top:2px}
-.btns{display:flex;gap:10px;margin-top:16px}
-.btn-tomar{flex:1;padding:16px;background:#111;color:#fff;border:0;border-radius:14px;font-weight:700;font-size:16px;transition:all .15s}
+.btn-tomar{width:100%;padding:18px;background:#111;color:#fff;border:0;border-radius:14px;font-weight:800;font-size:17px;margin-top:16px}
 .btn-tomar:active{transform:scale(.97)}
-.btn-wa{padding:16px;background:#F2FDF5;color:#25D366;border:1px solid #DCFCE7;border-radius:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center}
 .vacio{text-align:center;padding:80px 20px;color:#8E8E93}
-.vacio div{font-size:48px;margin-bottom:12px}
-.tab-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.08);padding:12px 20px 30px;display:flex;justify-content:center}
+.tab-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.08);padding:12px 20px 30px;display:flex;justify-content:space-between}
 .tab-bar a{color:var(--azul);text-decoration:none;font-size:13px;font-weight:600;opacity:.6}
 </style>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAob6r4aBLeT2tJdmNvd3nb1-YnaKmAIik&libraries=places"></script>
 </head>
 <body>
 <div class="iphone">
   <div class="header"><div style="display:flex;gap:10px;align-items:center"><div class="logo">CC</div> CONDUCTORES</div><div class="badge" id="contador">0</div></div>
   <div class="content">
     <div class="title">Viajes nuevos</div>
-    <div class="sub">Colección: servicios_prueba • En vivo</div>
+    <div class="sub" id="subInfo">Cargando...</div>
     <div class="top-pill"><div class="live"><div class="dot"></div> Escuchando</div><span id="status">Conectado</span></div>
-    <div id="lista"><div class="vacio"><div>📡</div>Esperando viajes...<br><small>Deja la pantalla encendida</small></div></div>
+    <div id="lista"><div class="vacio"><div>📡</div>Esperando viajes...</div></div>
   </div>
-  <div class="tab-bar"><a href="index.html">← Volver a cliente</a></div>
+  <div class="tab-bar"><a href="#" id="logout">Cerrar sesión</a><a href="index.html">← Cliente</a></div>
 </div>
-
-<audio id="ding" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
 const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
-const app=initializeApp(firebaseConfig); const db=getFirestore(app);
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+const auth=getAuth(app);
 
-const lista=document.getElementById('lista'); const contador=document.getElementById('contador'); const ding=document.getElementById('ding');
+const lista=document.getElementById('lista'), contador=document.getElementById('contador'), subInfo=document.getElementById('subInfo');
+const TARIFA_KM = 13;
+let conductorCoords = null;
+let conductorData = null;
+let viajesCache = [];
 
-const q=query(collection(db,"servicios_prueba"),where("estado","==","pendiente"));
+document.getElementById('logout').onclick=async()=>{ await signOut(auth); location.href="login-conductores.html"; }
 
-let primerLoad=true;
-onSnapshot(q,(snap)=>{
-  if(snap.empty){lista.innerHTML='<div class="vacio"><div>☕️</div>Sin viajes<br><small>Cuando un cliente pida, aparece aquí</small></div>';contador.textContent='0';return}
-  contador.textContent=snap.size;
-  if(!primerLoad){
-    const added=snap.docChanges().some(c=>c.type==='added');
-    if(added){try{ding.play(); if(navigator.vibrate) navigator.vibrate([200,100,200])}catch(e){}}
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){ window.location.href="login-conductores.html"; return; }
+  const snap=await getDoc(doc(db,"conductores",user.uid));
+  if(!snap.exists() || snap.data().estado!=="aprobado"){
+    await signOut(auth);
+    window.location.href="login-conductores.html";
+    return;
   }
-  primerLoad=false;
+  conductorData = snap.data();
+  subInfo.textContent = `👋 ${conductorData.nombre} • $13 x km`;
+});
+
+navigator.geolocation.getCurrentPosition(pos=>{
+  conductorCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+  if(conductorData) subInfo.textContent = `👋 ${conductorData.nombre} • Ubicación activa ✅`;
+  render();
+}, ()=>{ subInfo.textContent=`$13 x km • Sin GPS`; }, {enableHighAccuracy:true});
+
+function getDistanciaReal(o,d){
+  return new Promise((res,rej)=>{
+    try{
+      new google.maps.DistanceMatrixService().getDistanceMatrix({
+        origins:[new google.maps.LatLng(o.lat,o.lng)], destinations:[new google.maps.LatLng(d.lat,d.lng)], travelMode:'DRIVING'
+      },(r,s)=>{ if(s==='OK' && r.rows[0].elements[0].status==='OK') res(r.rows[0].elements[0].distance.value/1000); else rej(s); });
+    }catch(e){ rej(e); }
+  });
+}
+
+const q=query(collection(db,"servicios_prueba"),where("estado","in",["pendiente","programado"]));
+onSnapshot(q, (snap)=>{
+  viajesCache=[];
+  snap.forEach(d=>viajesCache.push({id:d.id,...d.data()}));
+  viajesCache.sort((a,b)=>{ if(a.estado==='pendiente'&&b.estado==='programado')return -1; if(a.estado==='programado'&&b.estado==='pendiente')return 1; return 0; });
+  render();
+});
+
+async function render(){
+  if(viajesCache.length===0){lista.innerHTML='<div class="vacio"><div>☕️</div>Sin viajes</div>';contador.textContent='0';return;}
+  contador.textContent=viajesCache.length;
   lista.innerHTML='';
-  snap.forEach(d=>{
-    const v=d.data();
-    const tel=(v.telefono||'').replace(/[^0-9]/g,'');
+  for(let v of viajesCache){
+    const distOD = v.distanciaOrigenDestino || v.distanciaTotal || 0;
+    let distCO = v.distanciaConductorOrigen || 0;
+    if(conductorCoords && v.origenLat &&!v.distanciaOrigenDestino){
+      try{ distCO = await getDistanciaReal(conductorCoords, {lat:v.origenLat, lng:v.origenLng}); }catch(e){}
+    }
+    const total = (distCO||0) + (distOD||0);
+    const precio = Math.max(Math.round(total * TARIFA_KM), 35);
+    const horaHtml = v.fechaHoraProgramada? `<div class="hora-pill prog">⏰ ${new Date(v.fechaHoraProgramada).toLocaleString('es-MX',{dateStyle:'short', timeStyle:'short'})}</div>` : `<div class="hora-pill ahora">🔥 AHORA</div>`;
     const card=document.createElement('div'); card.className='card';
     card.innerHTML=`
-      <div class="card-top"><span class="cliente">${v.cliente||'Cliente'}</span><span class="tel">${v.telefono||'sin tel'}</span></div>
+      ${horaHtml}
+      <div class="card-top"><span class="cliente">${v.cliente||'Cliente'}</span><span class="tel">${v.telefono||''}</span></div>
       <div class="ruta">
-        <div class="line"><div class="dot-o"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700;letter-spacing:.5px">RECOGER</small><br><b>${v.origen}</b></div></div>
-        <div class="line"><div class="dot-d"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700;letter-spacing:.5px">DESTINO</small><br><b>${v.destino}</b></div></div>
+        <div class="line"><div class="dot-o"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">RECOGER <span class="dist-tag">${distCO? distCO.toFixed(1)+' km de ti' : ''}</span></small><br><b>${v.origen}</b></div></div>
+        <div class="line"><div class="dot-d"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">DESTINO <span class="dist-tag2">${distOD? distOD.toFixed(1)+' km' : ''}</span></small><br><b>${v.destino}</b></div></div>
       </div>
-      <div class="btns">
-        <button class="btn-tomar">Tomar viaje</button>
-        ${tel?`<a class="btn-wa" href="https://wa.me/52${tel}?text=Hola ${encodeURIComponent(v.cliente||'')}, soy tu conductor CC" target="_blank">WA</a>`:''}
+      <div class="precio-box">
+        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93">${distCO? distCO.toFixed(1)+' km tú→origen + ' : ''}${distOD.toFixed(1)} km viaje = ${total.toFixed(1)} km x $${TARIFA_KM}</small></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b>$${precio} MXN</b><span style="font-size:11px;color:#C5A880">Tarifa sugerida</span></div>
       </div>
+      <button class="btn-tomar">Tomar viaje</button>
     `;
     card.querySelector('.btn-tomar').onclick=async()=>{
-      if(!confirm(`Tomar viaje?\n${v.cliente}\n${v.origen} → ${v.destino}`))return;
-      await updateDoc(doc(db,"servicios_prueba",d.id),{estado:"tomado", tomadoEn:new Date().toISOString()});
+      if(!conductorData) return alert("Cargando datos del conductor...");
+      await updateDoc(doc(db,"servicios_prueba",v.id),{
+        estado:"tomado", tomadoEn:new Date().toISOString(),
+        conductorNombre:conductorData.nombre, conductorId: conductorData.uid,
+        distanciaConductorOrigen:distCO, distanciaOrigenDestino:distOD, distanciaTotal:total,
+        precioCobrado:precio, tarifaKm:TARIFA_KM, conductorLat:conductorCoords?.lat||null, conductorLng:conductorCoords?.lng||null, vistoPorAdmin:false
+      });
+      const telLimpio=(v.telefono||'').replace(/[^0-9]/g,'');
+      if(telLimpio){
+        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n📍 ${v.origen}\n🏁 ${v.destino}\n📏 ${total.toFixed(1)} km\n💰 $${precio} MXN`;
+        window.open(`https://wa.me/52${telLimpio}?text=${encodeURIComponent(msg)}`,'_blank');
+      }
     };
-    lista.prepend(card);
-  });
-});
+    lista.appendChild(card);
+  }
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin CC Drivers</title>
+<style>
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif}
+body{margin:0;background:#F5F5F7}
+.header{background:#0A1931;color:#C5A880;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.tabs{display:flex;gap:8px;padding:12px;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10}
+.tab{padding:10px 14px;border-radius:10px;font-weight:700;font-size:13px;border:1px solid #eee;background:#F5F5F7;cursor:pointer}
+.tab.active{background:#0A1931;color:#C5A880;border-color:#0A1931}
+.content{padding:16px;max-width:600px;margin:0 auto}
+.card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)}
+.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;display:inline-block}
+.pend{background:#FFF7D1;color:#7a5a00} .aprob{background:#E6FFF0;color:#0a7a2f} .bloq{background:#FFE0E0;color:#a00}
+.btn{padding:10px 14px;border-radius:10px;border:0;font-weight:700;font-size:13px;cursor:pointer;margin-right:6px}
+.btn-a{background:#0A1931;color:#fff} .btn-b{background:#FF3B30;color:#fff} .btn-g{background:#F5F5F7}
+.vacio{text-align:center;padding:60px;color:#8E8E93}
+small{color:#8E8E93}
+</style>
+</head>
+<body>
+<div class="header"><b>CC DRIVERS - ADMIN</b><span id="total">0 viajes</span></div>
+<div class="tabs">
+<button class="tab active" data-t="viajes">Viajes</button>
+<button class="tab" data-t="conductores">Conductores</button>
+<button class="tab" data-t="pendientes">Solicitudes (<span id="countPend">0</span>)</button>
+</div>
+<div class="content" id="lista"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
+const app=initializeApp(firebaseConfig); const db=getFirestore(app);
+
+let vista="viajes";
+let cacheViajes=[], cacheCond=[];
+const lista=document.getElementById('lista');
+
+document.querySelectorAll('.tab').forEach(b=>{
+ b.onclick=()=>{
+   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+   b.classList.add('active');
+   vista=b.dataset.t; render();
+ }
+});
+
+const qViajes=query(collection(db,"servicios_prueba"), orderBy("creado","desc"));
+onSnapshot(qViajes, snap=>{
+ cacheViajes=[]; snap.forEach(d=>cacheViajes.push({id:d.id,...d.data()}));
+ document.getElementById('total').textContent=cacheViajes.length+" viajes";
+ if(vista==="viajes") render();
+});
+
+const qCond=collection(db,"conductores");
+onSnapshot(qCond, snap=>{
+ cacheCond=[]; snap.forEach(d=>cacheCond.push({id:d.id,...d.data()}));
+ document.getElementById('countPend').textContent=cacheCond.filter(c=>c.estado==="pendiente").length;
+ if(vista!=="viajes") render();
+});
+
+function render(){
+ lista.innerHTML="";
+ if(vista==="viajes"){
+   if(cacheViajes.length===0){lista.innerHTML='<div class="vacio">Sin viajes</div>';return;}
+   cacheViajes.forEach(v=>{
+     const d=document.createElement('div'); d.className='card';
+     d.innerHTML=`
+       <div style="display:flex;justify-content:space-between"><b>${v.cliente||'Cliente'}</b><span class="badge ${v.estado==='tomado'?'aprob':'pend'}">${v.estado}</span></div>
+       <small>${v.telefono||''} • ${v.conductorNombre? 'Conductor: '+v.conductorNombre : 'Sin conductor'}</small>
+       <div style="margin:8px 0"><small>📍</small> ${v.origen}<br><small>🏁</small> ${v.destino}</div>
+       <div style="display:flex;justify-content:space-between;align-items:center"><b>$${v.precioCobrado||v.precio||0} MXN</b><small>${v.distanciaTotal? v.distanciaTotal.toFixed(1)+' km' : ''}</small></div>
+       <div style="margin-top:10px">
+         ${v.estado!=='finalizado'? `<button class="btn btn-g" onclick="window.finViaje('${v.id}')">Finalizar</button>`:''}
+         <button class="btn btn-b" onclick="window.delViaje('${v.id}')">Eliminar</button>
+         ${v.telefono? `<a class="btn btn-a" href="https://wa.me/52${(v.telefono||'').replace(/[^0-9]/g,'')}" target="_blank" style="text-decoration:none">WhatsApp</a>`:''}
+       </div>
+     `;
+     lista.appendChild(d);
+   });
+ }
+
+ if(vista==="conductores" || vista==="pendientes"){
+   let filtrados = vista==="pendientes"? cacheCond.filter(c=>c.estado==="pendiente") : cacheCond;
+   if(filtrados.length===0){lista.innerHTML='<div class="vacio">No hay conductores en esta sección</div>';return;}
+   filtrados.forEach(c=>{
+     const d=document.createElement('div'); d.className='card';
+     const badgeClass = c.estado==="aprobado"? "aprob" : c.estado==="pendiente"? "pend" : "bloq";
+     d.innerHTML=`
+       <div style="display:flex;justify-content:space-between"><b>${c.nombre}</b><span class="badge ${badgeClass}">${c.estado}</span></div>
+       <small>${c.correo} • ${c.telefono||''}</small><br>
+       <small>🚗 ${c.vehiculo||'Sin vehículo'} • UID: ${c.uid?.slice(0,6)||''}</small>
+       <div style="margin-top:12px">
+         ${c.estado!=="aprobado"? `<button class="btn btn-a" onclick="window.aprobar('${c.id}')">Aprobar ✅</button>`:''}
+         ${c.estado==="aprobado"? `<button class="btn btn-b" onclick="window.bloquear('${c.id}')">Bloquear</button>`: `<button class="btn btn-g" onclick="window.bloquear('${c.id}')">Rechazar</button>`}
+         <button class="btn btn-g" onclick="window.delCond('${c.id}')">Eliminar</button>
+       </div>
+     `;
+     lista.appendChild(d);
+   });
+ }
+}
+
+window.aprobar=async(id)=>{ await updateDoc(doc(db,"conductores",id),{estado:"aprobado"}); };
+window.bloquear=async(id)=>{ await updateDoc(doc(db,"conductores",id),{estado:"bloqueado"}); };
+window.delCond=async(id)=>{ if(confirm("¿Eliminar conductor?")) await deleteDoc(doc(db,"conductores",id)); };
+window.finViaje=async(id)=>{ await updateDoc(doc(db,"servicios_prueba",id),{estado:"finalizado"}); };
+window.delViaje=async(id)=>{ if(confirm("¿Eliminar viaje?")) await deleteDoc(doc(db,"servicios_prueba",id)); };
+</script>
+</body>
+</html>

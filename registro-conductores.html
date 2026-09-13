@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro CC Drivers</title>
+<style>
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif}
+body{margin:0;background:#F5F5F7;display:flex;justify-content:center;min-height:100vh}
+.card{width:100%;max-width:430px;background:#fff;margin:20px;border-radius:24px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+h1{font-size:24px;margin:0 0 6px} p{color:#8E8E93;font-size:14px;margin:0 0 20px}
+input{width:100%;padding:14px;border:1px solid #E5E5EA;border-radius:12px;margin:8px 0;font-size:16px}
+button{width:100%;padding:16px;background:#0A1931;color:#C5A880;border:0;border-radius:14px;font-weight:800;font-size:16px;margin-top:16px}
+a{color:#0A1931;font-size:13px;text-align:center;display:block;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>Registro Conductor</h1><p>CC DRIVERS - Solo personal autorizado</p>
+<input id="nombre" placeholder="Nombre completo">
+<input id="telefono" placeholder="WhatsApp">
+<input id="correo" placeholder="Correo" type="email">
+<input id="pass" placeholder="Contraseña" type="password">
+<input id="vehiculo" placeholder="Vehículo y placas (Ej: Versa ABC123)">
+<button id="btn">Solicitar acceso</button>
+<a href="login-conductores.html">¿Ya tienes cuenta? Inicia sesión</a>
+<div id="msg" style="margin-top:12px;font-size:13px"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
+const app=initializeApp(firebaseConfig); const auth=getAuth(app); const db=getFirestore(app);
+
+document.getElementById('btn').onclick=async()=>{
+ const nombre=document.getElementById('nombre').value.trim();
+ const telefono=document.getElementById('telefono').value.trim();
+ const correo=document.getElementById('correo').value.trim();
+ const pass=document.getElementById('pass').value.trim();
+ const vehiculo=document.getElementById('vehiculo').value.trim();
+ if(!nombre||!correo||!pass) return alert("Llena todo");
+ try{
+   const cred=await createUserWithEmailAndPassword(auth, correo, pass);
+   await setDoc(doc(db,"conductores",cred.user.uid),{
+     nombre, telefono, correo, vehiculo,
+     estado:"pendiente", creado: new Date().toISOString(), uid: cred.user.uid
+   });
+   document.getElementById('msg').innerHTML="<b style='color:green'>✅ Solicitud enviada. Espera a que el administrador te apruebe.</b>";
+ }catch(e){ alert(e.message); }
+}
+</script>
+</body>
+</html>
