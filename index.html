@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
 body{background:#F2F2F7;display:flex;justify-content:center;min-height:100vh}
-.iphone{width:100%;max-width:430px;background:#F2F2F7;min-height:100vh}
+.iphone{width:100%;max-width:430px;background:#F2F2F7;min-height:100vh;position:relative}
 .header{background:#0A1931;color:#C5A880;padding:16px 20px;display:flex;align-items:center;gap:12px;font-weight:900;height:64px}
 .logo{width:38px;height:38px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#0A1931;border:2px solid #C5A880;font-size:13px;font-weight:900}
 .content{padding:24px 16px 100px}
@@ -18,22 +18,32 @@ body{background:#F2F2F7;display:flex;justify-content:center;min-height:100vh}
 .card{background:#fff;border-radius:20px;padding:10px;box-shadow:0 4px 20px rgba(0,0,0,.06);margin-top:6px}
 .card input{width:100%;border:0;border-bottom:1px solid #F2F2F7;padding:18px 12px;outline:0;font-size:17px}
 .btn{width:100%;height:56px;background:#111;color:#fff;border:0;border-radius:14px;font-size:17px;font-weight:700;margin-top:12px}
-#estado{margin-top:12px;padding:14px;border-radius:12px;text-align:center;display:none;font-size:14px;font-weight:600;line-height:1.3}.ok{background:#FFF7D1;color:#5a4500;display:block!important}
+.btn:disabled{opacity:.5}
+#estado{margin-top:12px;padding:14px;border-radius:12px;text-align:center;display:none;font-size:14px;font-weight:600;line-height:1.3}
+.ok{background:#D1FFE0;color:#0a5a2a;display:block!important}
+.err{background:#FFE0E0;color:#7a0000;display:block!important}
+.sugerencias{background:#fff;border-radius:14px;margin-top:6px;box-shadow:0 12px 30px rgba(0,0,0,.18);max-height:240px;overflow:auto;display:none;position:absolute;z-index:100;left:0;right:0;top:66px;border:1px solid rgba(0,0,0,.06)}
+.sugerencias div{padding:12px 14px;border-bottom:1px solid #f0f0f0;cursor:pointer}
+.sugerencias div:hover{background:#F5F5F7}
+.sugerencias b{font-size:14px;display:block;color:#0A1931}
+.sugerencias small{color:#8E8E93;font-size:11px}
+.gps-dot{width:8px;height:8px;background:#34C759;border-radius:50%;display:inline-block;animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAob6r4aBLeT2tJdmNvd3nb1-YnaKmAIik&libraries=places"></script>
 </head>
 <body>
 <div class="iphone">
   <div class="header"><div class="logo">CC</div>VIAJES</div>
   <div class="content">
     <div class="tit">¿A dónde<br><span>vamos hoy?</span></div>
+    <div style="font-size:12px;color:#8E8E93;margin:-12px 0 14px 4px" id="gpsInfo">📍 Detectando tu ubicación...</div>
 
-    <div class="wrap"><div class="pill"><span>●</span><input id="origen" placeholder="¿Dónde te recogemos?" autocomplete="off"></div></div>
-    <div class="wrap"><div class="pill"><span>📍</span><input id="destino" placeholder="¿A dónde vas?" autocomplete="off"></div></div>
+    <div class="wrap"><div class="pill"><span>●</span><input id="origen" placeholder="¿Dónde te recogemos?" autocomplete="off"></div><div id="sug-origen" class="sugerencias"></div></div>
+    <div class="wrap"><div class="pill"><span>📍</span><input id="destino" placeholder="¿A dónde vas?" autocomplete="off"></div><div id="sug-destino" class="sugerencias"></div></div>
 
     <div class="wrap">
       <div class="pill">
-        <input type="text" id="fechaHora" placeholder="¿A qué hora?"
+        <input type="text" id="fechaHora" placeholder="¿A qué hora? (opcional)"
           onclick="if(this.type==='text'){this.type='datetime-local'; setTimeout(()=>this.showPicker&&this.showPicker(),100)}"
           onfocus="if(this.type==='text'){this.type='datetime-local'; setTimeout(()=>this.showPicker&&this.showPicker(),100)}"
           onblur="if(!this.value) this.type='text'">
@@ -56,56 +66,110 @@ const db=getFirestore(initializeApp({apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPz
 
 const origenInput = document.getElementById('origen');
 const destinoInput = document.getElementById('destino');
+const sugO = document.getElementById('sug-origen');
+const sugD = document.getElementById('sug-destino');
+const gpsInfo = document.getElementById('gpsInfo');
 let origenCoords = null, destinoCoords = null;
+let userCoords = null;
 
-const acOrigen = new google.maps.places.Autocomplete(origenInput,{componentRestrictions:{country:"mx"},fields:["formatted_address","geometry"]});
-const acDestino = new google.maps.places.Autocomplete(destinoInput,{componentRestrictions:{country:"mx"},fields:["formatted_address","geometry"]});
+// 1. GPS del cliente para cercanía REAL
+navigator.geolocation.getCurrentPosition(pos=>{
+  userCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+  gpsInfo.innerHTML = `<span class="gps-dot"></span> Ubicado a ${userCoords.lat.toFixed(4)}, ${userCoords.lng.toFixed(4)} • Sugerencias cercanas activas`;
+}, ()=>{
+  gpsInfo.textContent = "📍 Sin GPS - Sugerencias en todo México";
+}, {enableHighAccuracy:true, timeout:8000});
 
-acOrigen.addListener("place_changed",()=>{const p=acOrigen.getPlace(); if(p.geometry){origenCoords={lat:p.geometry.location.lat(),lng:p.geometry.location.lng()}; origenInput.value=p.formatted_address;}});
-acDestino.addListener("place_changed",()=>{const p=acDestino.getPlace(); if(p.geometry){destinoCoords={lat:p.geometry.location.lat(),lng:p.geometry.location.lng()}; destinoInput.value=p.formatted_address;}});
-
-function getDistanciaReal(o,d){
-  return new Promise((res,rej)=>{
-    new google.maps.DistanceMatrixService().getDistanceMatrix({
-      origins:[new google.maps.LatLng(o.lat,o.lng)], destinations:[new google.maps.LatLng(d.lat,d.lng)], travelMode:'DRIVING', unitSystem: google.maps.UnitSystem.METRIC
-    },(r,s)=>{ if(s==='OK' && r.rows[0].elements[0].status==='OK'){ res(r.rows[0].elements[0].distance.value/1000); } else rej(s); });
-  });
-}
-function geocodeDir(dir){
-  return new Promise((res,rej)=>{
-    new google.maps.Geocoder().geocode({address:dir},(r,s)=>{ if(s==='OK'&&r[0]) res({lat:r[0].geometry.location.lat(),lng:r[0].geometry.location.lng()}); else rej(s); });
-  });
+function calcDistKm(a,b){
+  const R=6371; const dLat=(b.lat-a.lat)*Math.PI/180; const dLng=(b.lng-a.lng)*Math.PI/180;
+  const s=Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
 }
 
-const btn=document.getElementById('btn'), estado=document.getElementById('estado');
-btn.onclick=async()=>{
-  const n=document.getElementById('nombre').value||'Cliente';
-  const tel=document.getElementById('telefono').value.trim();
+// 2. Buscador libre - sin ciudad atada
+async function buscarOSM(q){
+  let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=mx&limit=15&addressdetails=1`;
+  if(userCoords){
+    const delta = 0.08; // ~8km de radio de preferencia
+    url += `&viewbox=${userCoords.lng-delta},${userCoords.lat+delta},${userCoords.lng+delta},${userCoords.lat-delta}&bounded=0&lat=${userCoords.lat}&lon=${userCoords.lng}`;
+  }
+  const r = await fetch(url, {headers:{'Accept-Language':'es'}});
+  let res = await r.json();
+  if(userCoords && res.length){
+    res = res.map(p=>({...p, _dist: calcDistKm(userCoords, {lat:parseFloat(p.lat), lng:parseFloat(p.lon)})})).sort((a,b)=>a._dist-b._dist);
+  }
+  return res.slice(0,6);
+}
+
+function setupAutocomplete(input, sugDiv, setCoords){
+  let t=null;
+  input.addEventListener('input', ()=>{
+    clearTimeout(t);
+    const q=input.value.trim();
+    setCoords(null);
+    if(q.length<2){ sugDiv.style.display='none'; return; }
+    t=setTimeout(async()=>{
+      try{
+        const res = await buscarOSM(q);
+        sugDiv.innerHTML='';
+        res.forEach(p=>{
+          const div=document.createElement('div');
+          const corto = p.display_name.split(',').slice(0,3).join(', ');
+          const dist = p._dist? `${p._dist.toFixed(1)} km de ti` : p.address?.city || p.address?.town || '';
+          div.innerHTML = `<b>${corto}</b><small>📍 ${dist}</small>`;
+          div.onclick=()=>{
+            input.value = corto;
+            setCoords({lat:parseFloat(p.lat), lng:parseFloat(p.lon)});
+            sugDiv.style.display='none';
+          };
+          sugDiv.appendChild(div);
+        });
+        sugDiv.style.display = res.length?'block':'none';
+      }catch(e){ console.error(e); }
+    },300);
+  });
+  document.addEventListener('click', (e)=>{ if(!sugDiv.contains(e.target) && e.target!==input) sugDiv.style.display='none'; });
+}
+
+setupAutocomplete(origenInput, sugO, c=>origenCoords=c);
+setupAutocomplete(destinoInput, sugD, c=>destinoCoords=c);
+
+document.getElementById('btn').onclick=async()=>{
   const o=origenInput.value.trim(), d=destinoInput.value.trim();
-  const fh=document.getElementById('fechaHora').value;
-  if(!o||!d){estado.innerHTML='⚠️ Pon origen y destino';estado.className='ok';estado.style.display='block';return;}
+  const nombre=document.getElementById('nombre').value.trim()||'Cliente';
+  const tel=document.getElementById('telefono').value.trim();
+  const estado=document.getElementById('estado');
+  const btn=document.getElementById('btn');
+  if(!o||!d){ alert("Pon origen y destino"); return; }
+  if(tel.length<10){ alert("Celular a 10 dígitos"); return; }
 
-  btn.disabled=true; btn.textContent='Calculando...';
+  btn.disabled=true; btn.textContent='Enviando...';
+  estado.style.display='none';
   try{
-    if(!origenCoords) origenCoords = await geocodeDir(o);
-    if(!destinoCoords) destinoCoords = await geocodeDir(d);
-    const dist = await getDistanciaReal(origenCoords,destinoCoords);
+    if(!origenCoords){ const r=await buscarOSM(o); if(!r[0]) throw "Origen no encontrado"; origenCoords={lat:parseFloat(r[0].lat), lng:parseFloat(r[0].lon)}; }
+    if(!destinoCoords){ const r=await buscarOSM(d); if(!r[0]) throw "Destino no encontrado"; destinoCoords={lat:parseFloat(r[0].lat), lng:parseFloat(r[0].lon)}; }
+    const dist = calcDistKm(origenCoords, destinoCoords) * 1.3;
 
     await addDoc(collection(db,"servicios_prueba"),{
-      cliente:n, telefono:tel, origen:o, destino:d,
+      cliente:nombre, telefono:tel,
+      origen:o, destino:d,
       origenLat:origenCoords.lat, origenLng:origenCoords.lng,
       destinoLat:destinoCoords.lat, destinoLng:destinoCoords.lng,
       distanciaOrigenDestino:dist, distanciaTotal:dist,
-      comision: Math.round(dist*1),
-      fechaHoraProgramada: fh? new Date(fh).toISOString(): null,
-      esProgramado: fh? true:false,
-      estado: fh? 'programado':'pendiente',
-      creado:serverTimestamp(), creadoEn: new Date().toISOString()
+      origenCercania: userCoords? calcDistKm(userCoords, origenCoords) : null,
+      estado: document.getElementById('fechaHora').value?'programado':'pendiente',
+      fechaHoraProgramada: document.getElementById('fechaHora').value? new Date(document.getElementById('fechaHora').value).toISOString():null,
+      creado:serverTimestamp(),
+      clienteLat:userCoords?.lat||null, clienteLng:userCoords?.lng||null
     });
-    estado.innerHTML=`✅ Enviado - ${dist.toFixed(2)} km<br><span style="font-weight:400;font-size:13px">Recibirás WhatsApp cuando se acepte.</span>`;
-    estado.className='ok'; estado.style.display='block'; btn.textContent='¡Enviado!';
-    setTimeout(()=>{btn.disabled=false;btn.textContent='Solicitar Viaje';},3000);
-  }catch(e){ alert("Error: "+e); btn.disabled=false; btn.textContent='Solicitar Viaje'; console.error(e); }
+
+    estado.textContent=`✅ Enviado - ${dist.toFixed(1)} km. Un conductor te contactará.`; estado.className='ok'; estado.style.display='block';
+    origenInput.value=''; destinoInput.value=''; document.getElementById('fechaHora').value='';
+    origenCoords=null; destinoCoords=null;
+    btn.textContent='¡Enviado!';
+  }catch(e){ console.error(e); estado.textContent='❌ '+e; estado.className='err'; estado.style.display='block'; btn.textContent='Solicitar Viaje'; }
+  btn.disabled=false;
+  setTimeout(()=>btn.textContent='Solicitar Viaje',3000);
 };
 </script>
 </body>
