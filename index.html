@@ -61,7 +61,7 @@ body{background:#F2F2F7;display:flex;justify-content:center;min-height:100vh}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 const db=getFirestore(initializeApp({apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"}));
 
 const origenInput = document.getElementById('origen');
@@ -71,8 +71,8 @@ const sugD = document.getElementById('sug-destino');
 const gpsInfo = document.getElementById('gpsInfo');
 let origenCoords = null, destinoCoords = null;
 let userCoords = null;
+let unsubViaje = null;
 
-// 1. GPS del cliente para cercanía REAL
 navigator.geolocation.getCurrentPosition(pos=>{
   userCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
   gpsInfo.innerHTML = `<span class="gps-dot"></span> Ubicado a ${userCoords.lat.toFixed(4)}, ${userCoords.lng.toFixed(4)} • Sugerencias cercanas activas`;
@@ -86,11 +86,10 @@ function calcDistKm(a,b){
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
 }
 
-// 2. Buscador libre - sin ciudad atada
 async function buscarOSM(q){
   let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=mx&limit=15&addressdetails=1`;
   if(userCoords){
-    const delta = 0.08; // ~8km de radio de preferencia
+    const delta = 0.08;
     url += `&viewbox=${userCoords.lng-delta},${userCoords.lat+delta},${userCoords.lng+delta},${userCoords.lat-delta}&bounded=0&lat=${userCoords.lat}&lon=${userCoords.lng}`;
   }
   const r = await fetch(url, {headers:{'Accept-Language':'es'}});
@@ -143,6 +142,8 @@ document.getElementById('btn').onclick=async()=>{
   if(!o||!d){ alert("Pon origen y destino"); return; }
   if(tel.length<10){ alert("Celular a 10 dígitos"); return; }
 
+  if(unsubViaje) { unsubViaje(); unsubViaje=null; }
+
   btn.disabled=true; btn.textContent='Enviando...';
   estado.style.display='none';
   try{
@@ -150,7 +151,7 @@ document.getElementById('btn').onclick=async()=>{
     if(!destinoCoords){ const r=await buscarOSM(d); if(!r[0]) throw "Destino no encontrado"; destinoCoords={lat:parseFloat(r[0].lat), lng:parseFloat(r[0].lon)}; }
     const dist = calcDistKm(origenCoords, destinoCoords) * 1.3;
 
-    await addDoc(collection(db,"servicios_prueba"),{
+    const docRef = await addDoc(collection(db,"servicios_prueba"),{
       cliente:nombre, telefono:tel,
       origen:o, destino:d,
       origenLat:origenCoords.lat, origenLng:origenCoords.lng,
@@ -163,13 +164,78 @@ document.getElementById('btn').onclick=async()=>{
       clienteLat:userCoords?.lat||null, clienteLng:userCoords?.lng||null
     });
 
-    estado.textContent=`✅ Enviado - ${dist.toFixed(1)} km. Un conductor te contactará.`; estado.className='ok'; estado.style.display='block';
+    // --- NUEVO: BUSCA CONDUCTOR MÁS CERCANO Y MUESTRA TIEMPO, NO KM ---
+    let etaTexto = 'Buscando conductor más cercano...';
+    try{
+      // Busca conductores aprobados con ubicación
+      const { getDocs, query, where } = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js");
+      // Intenta leer todos y filtrar aquí (por si tu campo se llama 'estado' o 'aprobado')
+      const snapCond = await getDocs(collection(db,"conductores"));
+      let masCercanoKm = null;
+      snapCond.forEach(d=>{
+        const c = d.data();
+        const lat = c.lat || c.latitud || c.origenLat;
+        const lng = c.lng || c.longitud || c.origenLng;
+        if(!lat || !lng) return;
+        // solo aprobados si tienes ese campo
+        if(c.aprobado===false || c.estado==='rechazado') return;
+        const km = calcDistKm(origenCoords, {lat, lng});
+        if(masCercanoKm===null || km < masCercanoKm) masCercanoKm = km;
+      });
+      if(masCercanoKm!==null){
+        const mins = Math.max(1, Math.round((masCercanoKm/30)*60)); // 30km/h ciudad
+        etaTexto = `Conductor más cercano a ${mins} min de ti 🚗💨`;
+      }
+    }catch(e){ console.log("No se pudo calcular ETA cercano", e); }
+
+    estado.innerHTML = `✅ Viaje enviado<br><small>🔍 ${etaTexto}</small>`;
+    estado.className='ok'; estado.style.display='block';
+    btn.textContent='Buscando conductor...';
+
+    let avisoSinConductor = setTimeout(()=>{
+      if(estado.innerHTML.includes('Buscando')){
+        estado.innerHTML = `⏳ Aún no lo toma nadie.<br><small>Estamos avisando a más conductores cerca de ti...</small>`;
+      }
+    }, 120000);
+
+    unsubViaje = onSnapshot(doc(db, "servicios_prueba", docRef.id), (snap)=>{
+      if(!snap.exists()) return;
+      const v = snap.data();
+      if(v.estado==='tomado' || v.estado==='completado' || v.conductorNombre){
+        clearTimeout(avisoSinConductor);
+        const kmConductor = v.distanciaConductorOrigen || v.distanciaConductor || 0;
+        let tiempoTxt = '';
+        if(kmConductor>0){
+          const mins = Math.max(1, Math.round((kmConductor/30)*60));
+          tiempoTxt = `a ${mins} min • ${kmConductor.toFixed(1)} km de ti`;
+        } else {
+          tiempoTxt = `en camino hacia ti`;
+        }
+        const telChofer = v.conductorTelefono || v.telefonoConductor || '';
+        estado.innerHTML = `
+          <div style="text-align:left">
+            <div style="font-size:16px">✅ <b>${v.conductorNombre||'Un conductor'} tomó tu viaje</b></div>
+            <div style="margin-top:6px;font-size:14px">🚗 <b>${tiempoTxt}</b></div>
+            ${telChofer? `<div style="margin-top:6px;font-size:13px">📱 ${telChofer}</div>` : ''}
+            ${telChofer? `<a href="https://wa.me/52${telChofer.replace(/[^0-9]/g,'').slice(-10)}" target="_blank" style="display:block;margin-top:10px;background:#111;color:#fff;text-align:center;padding:12px;border-radius:10px;text-decoration:none;font-weight:700">Contactar por WhatsApp</a>` : ''}
+          </div>
+        `;
+        estado.className='ok';
+        btn.textContent='Conductor asignado';
+        btn.disabled=true;
+      }
+      if(v.estado==='finalizado'){
+        estado.innerHTML = `🎉 Viaje completado`;
+        if(unsubViaje) unsubViaje();
+      }
+    });
+
     origenInput.value=''; destinoInput.value=''; document.getElementById('fechaHora').value='';
     origenCoords=null; destinoCoords=null;
-    btn.textContent='¡Enviado!';
-  }catch(e){ console.error(e); estado.textContent='❌ '+e; estado.className='err'; estado.style.display='block'; btn.textContent='Solicitar Viaje'; }
-  btn.disabled=false;
-  setTimeout(()=>btn.textContent='Solicitar Viaje',3000);
+
+  }catch(e){ console.error(e); estado.textContent='❌ '+e; estado.className='err'; estado.style.display='block'; btn.textContent='Solicitar Viaje'; btn.disabled=false;}
+
+  setTimeout(()=>{ if(!unsubViaje){ btn.textContent='Solicitar Viaje'; btn.disabled=false; } },3000);
 };
 </script>
 </body>
