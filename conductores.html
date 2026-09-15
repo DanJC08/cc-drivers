@@ -55,7 +55,7 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc, limit } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
 const app=initializeApp(firebaseConfig);
@@ -112,7 +112,7 @@ navigator.geolocation.watchPosition(pos=>{
   actualizarDistancias();
 }, ()=>{ subInfo.textContent=`$13 x km • Sin GPS`; }, {enableHighAccuracy:true, maximumAge:30000, timeout:10000});
 
-const q=query(collection(db,"servicios_prueba"),where("estado","in",["pendiente","programado"]),orderBy("creadoEn","desc"),limit(20));
+const q=query(collection(db,"servicios_prueba"),where("estado","in",["pendiente","programado"]),limit(20));
 
 onSnapshot(q, (snap)=>{
   const nuevos=[];
