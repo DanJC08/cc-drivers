@@ -19,9 +19,7 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 .dot{width:8px;height:8px;background:#34C759;border-radius:50%;animation:blink 1.2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 .badge{background:var(--naranja);color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800}
-.card{background:#fff;border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04);animation:entra.35s}
-@keyframes entra{from{transform:translateY(16px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
-.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+.card{background:#fff;border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)}
 .cliente{font-weight:800;font-size:17px}
 .tel{font-size:13px;color:#8E8E93;background:#F5F5F7;padding:4px 8px;border-radius:8px}
 .hora-pill{font-size:12px;font-weight:800;padding:6px 10px;border-radius:20px;display:inline-block;margin-bottom:10px}
@@ -57,7 +55,7 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
 const app=initializeApp(firebaseConfig);
@@ -69,7 +67,7 @@ const TARIFA_KM = 13;
 let conductorCoords = null;
 let conductorData = null;
 let viajesCache = [];
-let prevCount = 0;
+let prevCount = -1;
 const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
 function sonar(){ audio.play().catch(()=>{}); if(navigator.vibrate) navigator.vibrate([200,100,200]); }
 
@@ -84,35 +82,43 @@ onAuthStateChanged(auth, async (user)=>{
       window.location.href="login-conductores.html";
       return;
     }
-    conductorData = {uid:user.uid, ...snap.data()};
+    conductorData = {uid:user.uid,...snap.data()};
     subInfo.textContent = `👋 ${conductorData.nombre} • $13 x km • GPS buscando...`;
   }catch(e){
     subInfo.textContent = "Error leyendo perfil: "+e.message;
   }
 });
 
-navigator.geolocation.watchPosition(pos=>{
-  conductorCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
-  if(conductorData) subInfo.textContent = `👋 ${conductorData.nombre} • Ubicación activa ✅ • $13 x km`;
-  if(viajesCache.length) render();
-}, ()=>{ subInfo.textContent=`$13 x km • Sin GPS`; }, {enableHighAccuracy:true, maximumAge:30000, timeout:10000});
-
 function calcKm(a,b){
   const R=6371; const dLat=(b.lat-a.lat)*Math.PI/180; const dLng=(b.lng-a.lng)*Math.PI/180;
   const s=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
   return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
 }
-function getDistanciaReal(o,d){
-  // MODO LIBRE sin Google: Haversine * 1.3 factor ruta
-  return Promise.resolve(calcKm(o,d)*1.3);
+
+function actualizarDistancias(){
+  if(!conductorCoords) return;
+  document.querySelectorAll('.card').forEach((card, i)=>{
+    const v = viajesCache[i];
+    if(!v ||!v.origenLat ||!v.origenLng) return;
+    const distCO = calcKm(conductorCoords, {lat:v.origenLat, lng:v.origenLng})*1.3;
+    const tag = card.querySelector('.dist-tag');
+    if(tag) tag.textContent = distCO.toFixed(1)+' km de ti';
+  });
 }
 
-const q=query(collection(db,"servicios_prueba"),where("estado","in",["pendiente","programado"]));
+navigator.geolocation.watchPosition(pos=>{
+  conductorCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+  if(conductorData) subInfo.textContent = `👋 ${conductorData.nombre} • Ubicación activa ✅ • $13 x km`;
+  actualizarDistancias();
+}, ()=>{ subInfo.textContent=`$13 x km • Sin GPS`; }, {enableHighAccuracy:true, maximumAge:30000, timeout:10000});
+
+const q=query(collection(db,"servicios_prueba"),where("estado","in",["pendiente","programado"]),orderBy("creadoEn","desc"),limit(20));
+
 onSnapshot(q, (snap)=>{
   const nuevos=[];
   snap.forEach(d=>nuevos.push({id:d.id,...d.data()}));
-  nuevos.sort((a,b)=>{ if(a.estado==='pendiente'&&b.estado==='programado')return -1; if(a.estado==='programado'&&b.estado==='pendiente')return 1; return new Date(b.creadoEn||0)-new Date(a.creadoEn||0); });
-  if(prevCount!==0 && nuevos.length>prevCount) sonar();
+  nuevos.sort((a,b)=>{ if(a.estado==='pendiente'&&b.estado==='programado')return -1; if(a.estado==='programado'&&b.estado==='pendiente')return 1; return 0; });
+  if(prevCount!==-1 && nuevos.length>prevCount) sonar();
   prevCount=nuevos.length;
   viajesCache=nuevos;
   render();
@@ -136,14 +142,14 @@ async function render(){
     const card=document.createElement('div'); card.className='card';
     card.innerHTML=`
       ${horaHtml}
-      <div class="card-top"><span class="cliente">${v.cliente||'Cliente'}</span><span class="tel">${v.telefono||''}</span></div>
+      <div class="card-top" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="cliente">${v.cliente||'Cliente'}</span><span class="tel">${v.telefono||''}</span></div>
       <div class="ruta">
         <div class="line"><div class="dot-o"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">RECOGER <span class="dist-tag">${distCO? distCO.toFixed(1)+' km de ti' : 'calculando...'}</span></small><br><b>${v.origen}</b></div></div>
         <div class="line"><div class="dot-d"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">DESTINO <span class="dist-tag2">${distOD? distOD.toFixed(1)+' km' : ''}</span></small><br><b>${v.destino}</b></div></div>
       </div>
       <div class="precio-box">
-        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93">${distCO? distCO.toFixed(1)+' km tú→origen + ' : ''}${distOD.toFixed(1)} km viaje = ${total.toFixed(1)} km x $${TARIFA_KM}</small></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b>$${precio} MXN</b><span style="font-size:11px;color:#C5A880">Tarifa sugerida</span></div>
+        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distCO? distCO.toFixed(1)+' km tú→origen + ' : ''}${distOD.toFixed(1)} km viaje = ${total.toFixed(1)} km x $${TARIFA_KM}</small></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precio} MXN</b><span style="font-size:11px;color:#C5A880">Tarifa sugerida</span></div>
       </div>
       <button class="btn-tomar">Tomar viaje</button>
     `;
