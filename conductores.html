@@ -163,7 +163,7 @@ async function render(){
       });
       const telLimpio=(v.telefono||'').replace(/[^0-9]/g,'');
       if(telLimpio){
-        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n📍 ${v.origen}\n🏁 ${v.destino}\n📏 ${total.toFixed(1)} km\n💰 $${precio} MXN`;
+        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n📍  ${v.origen}\n🏁 ${v.destino}\n💰 $${precio} MXN`;
         window.open(`https://wa.me/52${telLimpio}?text=${encodeURIComponent(msg)}`,'_blank');
       }
     };
