@@ -43,8 +43,8 @@ body{background:#F2F2F7;display:flex;justify-content:center;min-height:100vh}
     <div class="wrap"><div class="pill"><span>📍</span><input id="destino" placeholder="¿A dónde vas?" autocomplete="off"></div><div id="sug-destino" class="sugerencias"></div></div>
 
     <div id="precioBox" class="precioBox">
-      <div><small id="precioDetalle">-- km • -- min</small><b id="precioTotal">$--</b></div>
-      <div style="text-align:right"><small style="color:#fff">Tarifa estimada sin tráfico</small></div>
+      <div><small id="precioDetalle">-- km • -- min</small><b id="precioTotal">$--</b><small id="precioExtra" style="color:#FF7A00"></small></div>
+      <div style="text-align:right"><small style="color:#fff">Tarifa estimada</small></div>
     </div>
 
     <div class="wrap">
@@ -77,18 +77,45 @@ const gpsInfo = document.getElementById('gpsInfo');
 const precioBox = document.getElementById('precioBox');
 const precioTotalEl = document.getElementById('precioTotal');
 const precioDetalleEl = document.getElementById('precioDetalle');
+const precioExtraEl = document.getElementById('precioExtra');
 
 let origenCoords = null, destinoCoords = null;
 let userCoords = null;
 let unsubViaje = null;
-let tarifa = {base:20, por_km:10, por_min:1.5, minimo:40};
-let precioCalculado = 0;
 
-// Cargar tarifas de Firebase si existen
+// === TARIFA DINÁMICA ===
+let tarifa = {base:25, por_km:12, por_min:1.5, minimo:50, factor_demanda:1.0, extra_nocturno:15, extra_lluvia:0};
+let ultimoCalculo = null;
+
+// Cargar tarifas y escuchar cambios en vivo
 try{
   const tSnap = await getDoc(doc(db, "config", "tarifas"));
-  if(tSnap.exists()) tarifa = {...tarifa,...tSnap.data()};
-}catch(e){}
+  if(tSnap.exists()){
+    const d = tSnap.data();
+    tarifa = {
+      base: Number(d.base) || 25,
+      por_km: Number(d.por_km) || 12,
+      por_min: Number(d.por_min) || 1.5,
+      minimo: Number(d.minimo) || 50,
+      factor_demanda: Number(d.factor_demanda) || 1.0,
+      extra_nocturno: Number(d.extra_nocturno) || 0,
+      extra_lluvia: Number(d.extra_lluvia) || 0
+    };
+  }
+  onSnapshot(doc(db,"config","tarifas"), (snap)=>{
+    if(snap.exists()){
+      const d = snap.data();
+      tarifa.base = Number(d.base) || tarifa.base;
+      tarifa.por_km = Number(d.por_km) || tarifa.por_km;
+      tarifa.por_min = Number(d.por_min) || tarifa.por_min;
+      tarifa.minimo = Number(d.minimo) || tarifa.minimo;
+      tarifa.factor_demanda = Number(d.factor_demanda) || 1.0;
+      tarifa.extra_nocturno = Number(d.extra_nocturno) || 0;
+      tarifa.extra_lluvia = Number(d.extra_lluvia) || 0;
+      actualizarPrecioUI(); // recalcula solo si ya había ruta
+    }
+  });
+}catch(e){ console.log("Tarifa local", e); }
 
 navigator.geolocation.getCurrentPosition(pos=>{
   userCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
@@ -102,19 +129,38 @@ function calcDistKm(a,b){
 }
 
 function calcularPrecioFinal(distKm){
+  const ahora = new Date();
+  const hora = ahora.getHours();
   const duracionMin = (distKm / 30) * 60;
   let precio = tarifa.base + (distKm * tarifa.por_km) + (duracionMin * tarifa.por_min);
+  let extras = [];
+
+  if(tarifa.factor_demanda > 1){
+    extras.push(`x${tarifa.factor_demanda} demanda`);
+    precio = precio * tarifa.factor_demanda;
+  }
+  if((hora >= 22 || hora < 6) && tarifa.extra_nocturno > 0){
+    extras.push(`+$${tarifa.extra_nocturno} nocturno`);
+    precio += tarifa.extra_nocturno;
+  }
+  if(tarifa.extra_lluvia > 0){
+    extras.push(`+$${tarifa.extra_lluvia} lluvia`);
+    precio += tarifa.extra_lluvia;
+  }
+
   precio = Math.max(precio, tarifa.minimo);
-  return {precio: Math.round(precio/5)*5, minutos: Math.round(duracionMin)};
+  precio = Math.round(precio/5)*5;
+  return {precio, minutos: Math.round(duracionMin), extras, distKm};
 }
 
 function actualizarPrecioUI(){
   if(!origenCoords ||!destinoCoords) { precioBox.style.display='none'; return; }
   const dist = calcDistKm(origenCoords, destinoCoords) * 1.3;
-  const {precio, minutos} = calcularPrecioFinal(dist);
-  precioCalculado = precio;
-  precioDetalleEl.textContent = `${dist.toFixed(1)} km • ${minutos} min`;
-  precioTotalEl.textContent = `$${precio}`;
+  const calc = calcularPrecioFinal(dist);
+  ultimoCalculo = calc;
+  precioDetalleEl.textContent = `${dist.toFixed(1)} km • ${calc.minutos} min`;
+  precioTotalEl.textContent = `$${calc.precio}`;
+  precioExtraEl.textContent = calc.extras.length? calc.extras.join(" • ") : `Base $${tarifa.base} + $${tarifa.por_km}/km`;
   precioBox.style.display='flex';
 }
 
@@ -219,8 +265,10 @@ document.getElementById('btn').onclick=async()=>{
   try{
     if(!origenCoords){ const r=await buscarOSM(o); if(!r[0]) throw "Origen no encontrado"; origenCoords={lat:parseFloat(r[0].lat), lng:parseFloat(r[0].lon)}; }
     if(!destinoCoords){ const r=await buscarOSM(d); if(!r[0]) throw "Destino no encontrado"; destinoCoords={lat:parseFloat(r[0].lat), lng:parseFloat(r[0].lon)}; }
-    const dist = calcDistKm(origenCoords, destinoCoords) * 1.3;
-    const {precio} = calcularPrecioFinal(dist);
+    
+    if(!ultimoCalculo) actualizarPrecioUI();
+    const dist = ultimoCalculo?.distKm || calcDistKm(origenCoords, destinoCoords) * 1.3;
+    const calc = ultimoCalculo || calcularPrecioFinal(dist);
 
     let etaTexto = 'Buscando conductor más cercano...';
     try{
@@ -246,15 +294,18 @@ document.getElementById('btn').onclick=async()=>{
       origenLat:origenCoords.lat, origenLng:origenCoords.lng,
       destinoLat:destinoCoords.lat, destinoLng:destinoCoords.lng,
       distanciaOrigenDestino:dist, distanciaTotal:dist,
-      precioEstimado: precio,
-      precioFinal: precio,
+      precioEstimado: calc.precio,
+      precioFinal: calc.precio,
+      tiempoMin: calc.minutos,
+      tarifaUsada: tarifa,
+      extras: calc.extras.join(", "),
       estado: document.getElementById('fechaHora').value?'programado':'pendiente',
       fechaHoraProgramada: document.getElementById('fechaHora').value? new Date(document.getElementById('fechaHora').value).toISOString():null,
       creado:serverTimestamp(),
       clienteLat:userCoords?.lat||null, clienteLng:userCoords?.lng||null
     });
 
-    estado.innerHTML = `✅ Viaje enviado<br><small>💰 Precio: $${precio}<br>🔍 ${etaTexto}</small>`;
+    estado.innerHTML = `✅ Viaje enviado<br><small>💰 Precio: $${calc.precio}<br>🔍 ${etaTexto}</small>`;
     estado.className='ok'; estado.style.display='block';
     btn.textContent='Buscando conductor...';
 
@@ -272,7 +323,7 @@ document.getElementById('btn').onclick=async()=>{
         }
         let tiempoTxt = kmC>0? `a ${Math.max(1,Math.round((kmC/30)*60))} min • ${kmC.toFixed(1)} km de ti` : `en camino hacia ti`;
         const telC = v.conductorTelefono||'';
-        estado.innerHTML = `<div style="text-align:left"><div style="font-size:16px">✅ <b>${v.conductorNombre||'Conductor'} tomó tu viaje</b></div><div style="margin-top:6px">🚗 <b>${tiempoTxt}</b></div><div>💰 Total: $${v.precioFinal||precio}</div>${telC?`<a href="https://wa.me/52${telC.replace(/[^0-9]/g,'').slice(-10)}" target="_blank" style="display:block;margin-top:10px;background:#111;color:#fff;text-align:center;padding:12px;border-radius:10px;text-decoration:none">WhatsApp al conductor</a>`:''}</div>`;
+        estado.innerHTML = `<div style="text-align:left"><div style="font-size:16px">✅ <b>${v.conductorNombre||'Conductor'} tomó tu viaje</b></div><div style="margin-top:6px">🚗 <b>${tiempoTxt}</b></div><div>💰 Total: $${v.precioFinal||calc.precio}</div>${telC?`<a href="https://wa.me/52${telC.replace(/[^0-9]/g,'').slice(-10)}" target="_blank" style="display:block;margin-top:10px;background:#111;color:#fff;text-align:center;padding:12px;border-radius:10px;text-decoration:none">WhatsApp al conductor</a>`:''}</div>`;
         btn.textContent='Conductor asignado'; btn.disabled=true;
       }
     });

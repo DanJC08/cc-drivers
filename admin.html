@@ -7,43 +7,62 @@
 *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Inter,sans-serif}
 body{margin:0;background:#F5F5F7}
 .header{background:#0A1931;color:#C5A880;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
-.tabs{display:flex;gap:8px;padding:12px;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10}
-.tab{padding:10px 14px;border-radius:10px;font-weight:700;font-size:13px;border:1px solid #eee;background:#F5F5F7;cursor:pointer}
+.tabs{display:flex;gap:8px;padding:12px;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10;overflow-x:auto;flex-wrap:nowrap;align-items:stretch;-webkit-overflow-scrolling:touch}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:0 16px;min-height:48px;border-radius:10px;font-weight:700;font-size:13px;border:1px solid #eee;background:#F5F5F7;cursor:pointer;flex:0 0 auto;white-space:nowrap;display:flex;align-items:center;justify-content:center;line-height:1}
 .tab.active{background:#0A1931;color:#C5A880;border-color:#0A1931}
-.content{padding:16px;max-width:600px;margin:0 auto}
+#btnCobros{background:#0A1931;color:#C5A880;border:1px solid #C5A880}
+.content{padding:16px;max-width:650px;margin:0 auto}
 .card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)}
 .badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;display:inline-block}
-.pend{background:#FFF7D1;color:#7a5a00} .aprob{background:#E6FFF0;color:#0a7a2f} .bloq{background:#FFE0E0;color:#a00}
+.pend{background:#FFF7D1;color:#7a5a00}.aprob{background:#E6FFF0;color:#0a7a2f}.bloq{background:#FFE0E0;color:#a00}
 .btn{padding:10px 14px;border-radius:10px;border:0;font-weight:700;font-size:13px;cursor:pointer;margin-right:6px}
-.btn-a{background:#0A1931;color:#fff} .btn-b{background:#FF3B30;color:#fff} .btn-g{background:#F5F5F7}
+.btn-a{background:#0A1931;color:#fff}.btn-b{background:#FF3B30;color:#fff}.btn-g{background:#F5F5F7}
+.btn-export{background:#0a7a2f;color:#fff;width:100%;padding:14px;font-size:14px;margin-bottom:10px}
 .vacio{text-align:center;padding:60px;color:#8E8E93}
 small{color:#8E8E93}
+.resumen{background:#0A1931;color:#fff;border-radius:12px;padding:14px;margin-bottom:12px;font-size:13px;line-height:1.5}
+/* TARIFAS */
+.input-row{display:flex;gap:10px;margin:10px 0;align-items:center;justify-content:space-between}
+.input-row label{font-weight:700;font-size:13px;flex:1}
+.input-row input{width:100px;padding:10px;border-radius:10px;border:1px solid #ddd;text-align:center;font-weight:800}
+.factor-ctrl{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.factor-ctrl button{padding:12px 16px;border-radius:12px;border:1px solid #ddd;background:#fff;font-weight:800;cursor:pointer}
+.factor-ctrl button.active{background:#FF7A00;color:#fff;border-color:#FF7A00}
+.switch{width:50px;height:30px;background:#ddd;border-radius:20px;position:relative;cursor:pointer;transition:.2s}
+.switch.on{background:#34C759}
+.switch::after{content:'';position:absolute;width:26px;height:26px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch.on::after{left:22px}
 </style>
 </head>
 <body>
 <div class="header"><b>CC DRIVERS - ADMIN</b><span id="total">0 viajes</span></div>
 <div class="tabs">
-<button class="tab active" data-t="viajes">Viajes</button>
-<button class="tab" data-t="conductores">Conductores</button>
-<button class="tab" data-t="pendientes">Solicitudes (<span id="countPend">0</span>)</button>
+  <button class="tab active" data-t="viajes">Viajes</button>
+  <button class="tab" data-t="conductores">Conductores</button>
+  <button class="tab" data-t="pendientes">Solicitudes (<span id="countPend">0</span>)</button>
+  <button class="tab" data-t="cobros" id="btnCobros">💰 Cobros (<span id="countCobros">0</span>)</button>
+  <button class="tab" data-t="tarifas">⚙️ Tarifas</button>
 </div>
 <div class="content" id="lista"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 const firebaseConfig={apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
 const app=initializeApp(firebaseConfig); const db=getFirestore(app);
 
 let vista="viajes";
 let cacheViajes=[], cacheCond=[];
+let tarifaCache = {base:25, por_km:12, por_min:1.5, minimo:50, factor_demanda:1.0, extra_nocturno:15, extra_lluvia:0};
 const lista=document.getElementById('lista');
 
 document.querySelectorAll('.tab').forEach(b=>{
  b.onclick=()=>{
    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
    b.classList.add('active');
-   vista=b.dataset.t; render();
+   vista=b.dataset.t;
+   if(vista==='cobros'){ renderCobros(); } else if(vista==='tarifas'){ renderTarifas(); } else { render(); }
  }
 });
 
@@ -51,14 +70,23 @@ const qViajes=query(collection(db,"servicios_prueba"), orderBy("creado","desc"))
 onSnapshot(qViajes, snap=>{
  cacheViajes=[]; snap.forEach(d=>cacheViajes.push({id:d.id,...d.data()}));
  document.getElementById('total').textContent=cacheViajes.length+" viajes";
+ document.getElementById('countCobros').textContent = cacheViajes.filter(v=>['tomado','completado','finalizado'].includes(v.estado)).length;
  if(vista==="viajes") render();
+ if(vista==="cobros") renderCobros();
 });
 
 const qCond=collection(db,"conductores");
 onSnapshot(qCond, snap=>{
  cacheCond=[]; snap.forEach(d=>cacheCond.push({id:d.id,...d.data()}));
  document.getElementById('countPend').textContent=cacheCond.filter(c=>c.estado==="pendiente").length;
- if(vista!=="viajes") render();
+ if(vista!=="viajes" && vista!=="cobros" && vista!=="tarifas") render();
+});
+
+onSnapshot(doc(db,"config","tarifas"), snap=>{
+  if(snap.exists()){
+    tarifaCache = {...tarifaCache, ...snap.data()};
+    if(vista==="tarifas") renderTarifas();
+  }
 });
 
 function render(){
@@ -69,9 +97,9 @@ function render(){
      const d=document.createElement('div'); d.className='card';
      d.innerHTML=`
        <div style="display:flex;justify-content:space-between"><b>${v.cliente||'Cliente'}</b><span class="badge ${v.estado==='tomado'?'aprob':'pend'}">${v.estado}</span></div>
-       <small>${v.telefono||''} • ${v.conductorNombre? 'Conductor: '+v.conductorNombre : 'Sin conductor'}</small>
+       <small>${v.telefono||''} • ${v.conductorNombre? 'Conductor: '+v.conductorNombre : 'Sin conductor'} • $${v.precioEstimado||v.precioCobrado||0}</small>
        <div style="margin:8px 0"><small>📍</small> ${v.origen}<br><small>🏁</small> ${v.destino}</div>
-       <div style="display:flex;justify-content:space-between;align-items:center"><b>$${v.precioCobrado||v.precio||0} MXN</b><small>${v.distanciaTotal? v.distanciaTotal.toFixed(1)+' km' : ''}</small></div>
+       <div style="display:flex;justify-content:space-between;align-items:center"><b>$${v.precioCobrado||v.precio||0} MXN</b><small>${v.distanciaTotal? v.distanciaTotal.toFixed(1)+' km' : ''} • ${v.tiempoMin||0} min</small></div>
        <div style="margin-top:10px">
          ${v.estado!=='finalizado'? `<button class="btn btn-g" onclick="window.finViaje('${v.id}')">Finalizar</button>`:''}
          <button class="btn btn-b" onclick="window.delViaje('${v.id}')">Eliminar</button>
@@ -81,7 +109,6 @@ function render(){
      lista.appendChild(d);
    });
  }
-
  if(vista==="conductores" || vista==="pendientes"){
    let filtrados = vista==="pendientes"? cacheCond.filter(c=>c.estado==="pendiente") : cacheCond;
    if(filtrados.length===0){lista.innerHTML='<div class="vacio">No hay conductores en esta sección</div>';return;}
@@ -101,6 +128,110 @@ function render(){
      lista.appendChild(d);
    });
  }
+}
+
+function renderTarifas(){
+  lista.innerHTML=`
+    <div class="card">
+      <b>⚙️ Control de tarifa dinámica</b><br><small>Esto afecta al cliente y a conductores en tiempo real</small>
+      <div class="input-row"><label>Base ($)</label><input id="t_base" type="number" value="${tarifaCache.base}"></div>
+      <div class="input-row"><label>Por KM ($)</label><input id="t_km" type="number" value="${tarifaCache.por_km}"></div>
+      <div class="input-row"><label>Por minuto ($)</label><input id="t_min" type="number" step="0.1" value="${tarifaCache.por_min}"></div>
+      <div class="input-row"><label>Mínimo ($)</label><input id="t_minimo" type="number" value="${tarifaCache.minimo}"></div>
+      <div class="input-row"><label>Extra nocturno (10pm-6am)</label><input id="t_noct" type="number" value="${tarifaCache.extra_nocturno}"></div>
+      
+      <div style="margin-top:18px"><b>Factor demanda (multiplicador)</b><br><small>1.0 = normal, 1.2 = +20%, 1.5 = +50%</small></div>
+      <div class="factor-ctrl">
+        <button class="${tarifaCache.factor_demanda==1.0?'active':''}" onclick="window.setFactor(1.0)">1.0 Normal</button>
+        <button class="${tarifaCache.factor_demanda==1.2?'active':''}" onclick="window.setFactor(1.2)">1.2 Pico</button>
+        <button class="${tarifaCache.factor_demanda==1.3?'active':''}" onclick="window.setFactor(1.3)">1.3 Alto</button>
+        <button class="${tarifaCache.factor_demanda==1.5?'active':''}" onclick="window.setFactor(1.5)">1.5 Lluvia</button>
+        <button class="${tarifaCache.factor_demanda==2.0?'active':''}" onclick="window.setFactor(2.0)">2.0 Evento</button>
+      </div>
+      <div class="input-row"><label>Factor personalizado</label><input id="t_factor" type="number" step="0.1" value="${tarifaCache.factor_demanda}"></div>
+
+      <div class="input-row"><label>Extra lluvia ($)</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input id="t_lluvia" type="number" value="${tarifaCache.extra_lluvia}">
+          <div class="switch ${tarifaCache.extra_lluvia>0?'on':''}" id="switchLluvia" onclick="window.toggleLluvia()"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-a" style="width:100%;margin-top:16px;padding:16px;font-size:16px" onclick="window.guardarTarifa()">💾 Guardar tarifa</button>
+      <div id="msgTarifa" style="margin-top:10px;text-align:center;font-weight:700"></div>
+      
+      <div class="resumen" style="margin-top:16px">
+        <b>Ejemplo ahora:</b><br>
+        Viaje 3km = Base $${tarifaCache.base} + 3x$${tarifaCache.por_km} + ${Math.round((3/30)*60)}min x $${tarifaCache.por_min} = $${(tarifaCache.base + 3*tarifaCache.por_km + ((3/30)*60)*tarifaCache.por_min).toFixed(0)} x ${tarifaCache.factor_demanda} ${tarifaCache.extra_nocturno>0? `+ $${tarifaCache.extra_nocturno} nocturno`:''} ${tarifaCache.extra_lluvia>0? `+ $${tarifaCache.extra_lluvia} lluvia`:''}<br>
+        <b style="color:#C5A880;font-size:16px">= $${Math.round(((tarifaCache.base + 3*tarifaCache.por_km + ((3/30)*60)*tarifaCache.por_min)*tarifaCache.factor_demanda + tarifaCache.extra_nocturno + tarifaCache.extra_lluvia)/5)*5} MXN aprox</b>
+      </div>
+    </div>
+  `;
+}
+
+window.setFactor=(f)=>{
+  document.getElementById('t_factor').value=f;
+  tarifaCache.factor_demanda=f;
+  renderTarifas();
+}
+window.toggleLluvia=()=>{
+  const inp=document.getElementById('t_lluvia');
+  if(Number(inp.value)>0){ inp.value=0; } else { inp.value=10; }
+  renderTarifas();
+}
+window.guardarTarifa=async()=>{
+  const nueva={
+    base: Number(document.getElementById('t_base').value),
+    por_km: Number(document.getElementById('t_km').value),
+    por_min: Number(document.getElementById('t_min').value),
+    minimo: Number(document.getElementById('t_minimo').value),
+    factor_demanda: Number(document.getElementById('t_factor').value),
+    extra_nocturno: Number(document.getElementById('t_noct').value),
+    extra_lluvia: Number(document.getElementById('t_lluvia').value),
+  };
+  await setDoc(doc(db,"config","tarifas"), nueva, {merge:true});
+  document.getElementById('msgTarifa').textContent="✅ Guardado - clientes y choferes ya ven nuevo precio";
+  setTimeout(()=>{ document.getElementById('msgTarifa').textContent=""; },3000);
+}
+
+function renderCobros(){
+  lista.innerHTML="";
+  const tomados = cacheViajes.filter(v=>['tomado','completado','finalizado'].includes(v.estado));
+  if(tomados.length===0){lista.innerHTML='<div class="vacio">Aún no hay cobros</div>';return;}
+  let porConductor={}, totalKm=0, totalDinero=0;
+  tomados.forEach(v=>{
+    const km = v.distanciaTotal||0;
+    const precio = v.precioCobrado||v.precio||0;
+    totalKm+=km; totalDinero+=precio;
+    const key=v.conductorNombre||'Sin conductor';
+    if(!porConductor[key]) porConductor[key]={viajes:0,km:0,dinero:0};
+    porConductor[key].viajes++; porConductor[key].km+=km; porConductor[key].dinero+=precio;
+  });
+  let resumenHtml=`<div class="resumen"><b>📊 Resumen</b><br>${tomados.length} viajes • ${totalKm.toFixed(1)} km • $${totalDinero} MXN<br><br>`;
+  for(let c in porConductor){
+    resumenHtml+=`👤 ${c}: ${porConductor[c].viajes} viajes - ${porConductor[c].km.toFixed(1)} km - $${porConductor[c].dinero}<br>`;
+  }
+  resumenHtml+=`</div><button class="btn btn-export" onclick="window.exportarCobrosPro()">📥 Exportar Excel</button>`;
+  lista.innerHTML=resumenHtml;
+  tomados.forEach(v=>{
+    const d=document.createElement('div'); d.className='card';
+    const fecha = v.tomadoEn? new Date(v.tomadoEn).toLocaleString('es-MX') : (v.creado? new Date(v.creado.seconds*1000).toLocaleString('es-MX') : '');
+    d.innerHTML=`<div style="display:flex;justify-content:space-between"><b>${v.conductorNombre||'Sin conductor'}</b><small>${fecha}</small></div><small>${v.cliente||''} • ${v.telefono||''}</small><div style="margin:6px 0;font-size:13px">${v.origen} → ${v.destino}</div><div style="display:flex;justify-content:space-between"><span>${(v.distanciaTotal||0).toFixed(1)} km • ${v.tiempoMin||0} min</span><b>$${v.precioCobrado||v.precio||0}</b></div>`;
+    lista.appendChild(d);
+  });
+}
+
+window.exportarCobrosPro=()=>{
+  const tomados = cacheViajes.filter(v=>['tomado','completado','finalizado'].includes(v.estado));
+  if(tomados.length===0) return alert("No hay cobros");
+  let csv="Fecha,Conductor,Cliente,Telefono,Origen,Destino,Km,Tiempo,Precio Cobrado,Factor\n";
+  tomados.forEach(v=>{
+    const fecha = v.tomadoEn? new Date(v.tomadoEn).toLocaleString('es-MX') : '';
+    csv+=`"${fecha}","${(v.conductorNombre||'').replace(/"/g,'')}","${(v.cliente||'').replace(/"/g,'')}","${v.telefono||''}","${(v.origen||'').replace(/"/g,'')}","${(v.destino||'').replace(/"/g,'')}","${(v.distanciaTotal||0).toFixed(2)}","${v.tiempoMin||0}","${v.precioCobrado||v.precio||0}","${v.tarifaUsada?.factor_demanda||1}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`cobros_${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
 window.aprobar=async(id)=>{ await updateDoc(doc(db,"conductores",id),{estado:"aprobado"}); };

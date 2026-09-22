@@ -46,7 +46,7 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
   <div class="header"><div style="display:flex;gap:10px;align-items:center"><div class="logo">CC</div> CONDUCTORES</div><div class="badge" id="contador">0</div></div>
   <div class="content">
     <div class="title">Viajes nuevos</div>
-    <div class="sub" id="subInfo">Cargando...</div>
+    <div class="sub" id="subInfo">Cargando tarifa...</div>
     <div class="top-pill"><div class="live"><div class="dot"></div> Escuchando</div><span id="status">Conectado</span></div>
     <div id="lista"><div class="vacio"><div>📡</div>Esperando viajes...</div></div>
   </div>
@@ -55,7 +55,7 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc, limit } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc, limit, onSnapshot as onDocSnap } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
 const app=initializeApp(firebaseConfig);
@@ -63,13 +63,85 @@ const db=getFirestore(app);
 const auth=getAuth(app);
 
 const lista=document.getElementById('lista'), contador=document.getElementById('contador'), subInfo=document.getElementById('subInfo');
-const TARIFA_KM = 13;
+
+// TARIFA DINÁMICA DESDE FIREBASE
+let tarifa = {base:25, por_km:12, por_min:1.5, minimo:50, factor_demanda:1.0, extra_nocturno:15, extra_lluvia:0};
+
+async function cargarTarifa(){
+  try{
+    // Escucha en tiempo real para que si tú cambias el precio, a todos los choferes les cambia solo
+    onDocSnap(doc(db,"config","tarifas"), (snap)=>{
+      if(snap.exists()){
+        const d = snap.data();
+        tarifa.base = Number(d.base) || 25;
+        tarifa.por_km = Number(d.por_km) || 12;
+        tarifa.por_min = Number(d.por_min) || 1.5;
+        tarifa.minimo = Number(d.minimo) || 50;
+        tarifa.factor_demanda = Number(d.factor_demanda) || 1.0;
+        tarifa.extra_nocturno = Number(d.extra_nocturno) || 0;
+        tarifa.extra_lluvia = Number(d.extra_lluvia) || 0;
+        if(conductorData) actualizarSubInfo();
+        if(viajesCache.length>0) render();
+      }
+    });
+  }catch(e){ console.log("Tarifa por defecto", e); }
+}
+cargarTarifa();
+
+function actualizarSubInfo(){
+  let txt = `👋 ${conductorData?.nombre||''} • Base $${tarifa.base} + $${tarifa.por_km}/km`;
+  if(tarifa.factor_demanda > 1) txt += ` • 🔥 x${tarifa.factor_demanda}`;
+  if(conductorCoords) txt += ` • GPS ✅`;
+  subInfo.textContent = txt;
+}
+
+function calcularPrecioFinal(distKm){
+  const ahora = new Date();
+  const hora = ahora.getHours();
+  const duracionMin = (distKm / 30) * 60; // 30km/h promedio Uruapan
+  
+  let precio = tarifa.base + (distKm * tarifa.por_km) + (duracionMin * tarifa.por_min);
+  
+  let detalle = [];
+  if(tarifa.factor_demanda > 1){
+    detalle.push(`Demanda x${tarifa.factor_demanda}`);
+    precio = precio * tarifa.factor_demanda;
+  }
+  if((hora >= 22 || hora < 6) && tarifa.extra_nocturno>0){
+    detalle.push(`Nocturno +$${tarifa.extra_nocturno}`);
+    precio += tarifa.extra_nocturno;
+  }
+  if(tarifa.extra_lluvia>0){
+    detalle.push(`Lluvia +$${tarifa.extra_lluvia}`);
+    precio += tarifa.extra_lluvia;
+  }
+
+  precio = Math.max(precio, tarifa.minimo);
+  precio = Math.round(precio/5)*5; // redondeo a $5
+
+  return {precio, minutos: Math.round(duracionMin), detalle};
+}
+
 let conductorCoords = null;
 let conductorData = null;
 let viajesCache = [];
 let prevCount = -1;
-const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-function sonar(){ audio.play().catch(()=>{}); if(navigator.vibrate) navigator.vibrate([200,100,200]); }
+const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/24/audio_b9bd4170e8.mp3');
+audio.preload = 'auto';
+let audioListo = false;
+
+function desbloquearAudio(){
+  if(audioListo) return;
+  audio.play().then(()=>{ audio.pause(); audio.currentTime = 0; audioListo = true; }).catch(()=>{});
+}
+document.addEventListener('click', desbloquearAudio, {once:true});
+document.addEventListener('touchstart', desbloquearAudio, {once:true});
+function sonar(){
+  desbloquearAudio();
+  audio.currentTime = 0; audio.play().catch(()=>{});
+  if(navigator.vibrate) navigator.vibrate([400,100,400,100,400]);
+  let orig=document.title; document.title="🔥 ¡NUEVO VIAJE! 🔥"; setTimeout(()=>document.title=orig,2000);
+}
 
 document.getElementById('logout').onclick=async()=>{ await signOut(auth); location.href="login-conductores.html"; }
 
@@ -78,15 +150,11 @@ onAuthStateChanged(auth, async (user)=>{
   try{
     const snap=await getDoc(doc(db,"conductores",user.uid));
     if(!snap.exists() || snap.data().estado!=="aprobado"){
-      await signOut(auth);
-      window.location.href="login-conductores.html";
-      return;
+      await signOut(auth); window.location.href="login-conductores.html"; return;
     }
     conductorData = {uid:user.uid,...snap.data()};
-    subInfo.textContent = `👋 ${conductorData.nombre} • $13 x km • GPS buscando...`;
-  }catch(e){
-    subInfo.textContent = "Error leyendo perfil: "+e.message;
-  }
+    actualizarSubInfo();
+  }catch(e){ subInfo.textContent = "Error perfil: "+e.message; }
 });
 
 function calcKm(a,b){
@@ -95,35 +163,17 @@ function calcKm(a,b){
   return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
 }
 
-function actualizarDistancias(){
-  if(!conductorCoords) return;
-  document.querySelectorAll('.card').forEach((card, i)=>{
-    const v = viajesCache[i];
-    if(!v ||!v.origenLat ||!v.origenLng) return;
-    const distCO = calcKm(conductorCoords, {lat:v.origenLat, lng:v.origenLng})*1.3;
-    const tag = card.querySelector('.dist-tag');
-    if(tag) tag.textContent = distCO.toFixed(1)+' km de ti';
-  });
-}
-
 navigator.geolocation.watchPosition(pos=>{
   conductorCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
-  if(conductorData) subInfo.textContent = `👋 ${conductorData.nombre} • Ubicación activa ✅ • $13 x km`;
-  actualizarDistancias();
-}, ()=>{ subInfo.textContent=`$13 x km • Sin GPS`; }, {enableHighAccuracy:true, maximumAge:30000, timeout:10000});
+  actualizarSubInfo();
+}, ()=>{}, {enableHighAccuracy:true, maximumAge:30000, timeout:10000});
 
 const q=query(collection(db,"servicios_prueba"),where("estado","in",["pendiente","programado"]),limit(20));
-
 onSnapshot(q, (snap)=>{
-  const nuevos=[];
-  snap.forEach(d=>nuevos.push({id:d.id,...d.data()}));
+  const nuevos=[]; snap.forEach(d=>nuevos.push({id:d.id,...d.data()}));
   nuevos.sort((a,b)=>{ if(a.estado==='pendiente'&&b.estado==='programado')return -1; if(a.estado==='programado'&&b.estado==='pendiente')return 1; return 0; });
   if(prevCount!==-1 && nuevos.length>prevCount) sonar();
-  prevCount=nuevos.length;
-  viajesCache=nuevos;
-  render();
-}, (err)=>{
-  lista.innerHTML=`<div style="padding:20px;color:red">Error viajes: ${err.message}</div>`;
+  prevCount=nuevos.length; viajesCache=nuevos; render();
 });
 
 async function render(){
@@ -132,38 +182,52 @@ async function render(){
   lista.innerHTML='';
   for(let v of viajesCache){
     const distOD = v.distanciaOrigenDestino || v.distanciaTotal || 0;
-    let distCO = 0;
-    if(conductorCoords && v.origenLat && v.origenLng){
-      distCO = calcKm(conductorCoords, {lat:v.origenLat, lng:v.origenLng})*1.3;
+    // Usa el precio que YA calculó el cliente y guardó en el pedido
+    let precioFinal = v.precioEstimado || v.precio;
+    let minutos = v.tiempoMin || 0;
+    let detalleTxt = "";
+
+    if(!precioFinal){
+      // Si es un pedido viejo sin precio, lo calculamos aquí con tarifa dinámica
+      const calc = calcularPrecioFinal(distOD || 2);
+      precioFinal = calc.precio;
+      minutos = calc.minutos;
+      detalleTxt = calc.detalle.join(" • ");
+    } else {
+      detalleTxt = `Base $${tarifa.base} + ${distOD.toFixed(1)}km x $${tarifa.por_km}`;
+      if(tarifa.factor_demanda>1) detalleTxt+=` • x${tarifa.factor_demanda}`;
     }
-    const total = (distCO||0) + (distOD||0);
-    const precio = Math.max(Math.round(total * TARIFA_KM), 35);
-    const horaHtml = v.fechaHoraProgramada? `<div class="hora-pill prog">⏰ ${new Date(v.fechaHoraProgramada).toLocaleString('es-MX',{dateStyle:'short', timeStyle:'short'})}</div>` : `<div class="hora-pill ahora">🔥 AHORA • A ${distCO? distCO.toFixed(1)+' km de ti' : 'cerca'}</div>`;
+
+    const horaHtml = v.fechaHoraProgramada? `<div class="hora-pill prog">⏰ ${new Date(v.fechaHoraProgramada).toLocaleString('es-MX',{dateStyle:'short', timeStyle:'short'})}</div>` : `<div class="hora-pill ahora">🔥 AHORA • ${minutos} min</div>`;
+
     const card=document.createElement('div'); card.className='card';
     card.innerHTML=`
       ${horaHtml}
-      <div class="card-top" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="cliente">${v.cliente||'Cliente'}</span><span class="tel">${v.telefono||''}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="cliente">${v.cliente||'Cliente'}</span><span class="tel">${v.telefono||''}</span></div>
       <div class="ruta">
-        <div class="line"><div class="dot-o"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">RECOGER <span class="dist-tag">${distCO? distCO.toFixed(1)+' km de ti' : 'calculando...'}</span></small><br><b>${v.origen}</b></div></div>
+        <div class="line"><div class="dot-o"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">RECOGER</small><br><b>${v.origen}</b></div></div>
         <div class="line"><div class="dot-d"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">DESTINO <span class="dist-tag2">${distOD? distOD.toFixed(1)+' km' : ''}</span></small><br><b>${v.destino}</b></div></div>
       </div>
       <div class="precio-box">
-        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distCO? distCO.toFixed(1)+' km tú→origen + ' : ''}${distOD.toFixed(1)} km viaje = ${total.toFixed(1)} km x $${TARIFA_KM}</small></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precio} MXN</b><span style="font-size:11px;color:#C5A880">Tarifa sugerida</span></div>
+        <small style="color:#8E8E93">${detalleTxt}</small>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <b>$${precioFinal} MXN</b>
+          <span style="font-size:11px;color:#C5A880">${v.precioEstimado? 'Precio cliente' : 'Estimado dinámica'}</span>
+        </div>
+        ${minutos? `<small style="color:#666">⏱️ ${minutos} min aprox • Mínimo $${tarifa.minimo}</small>` : ``}
       </div>
-      <button class="btn-tomar">Tomar viaje</button>
+      <button class="btn-tomar">Tomar por $${precioFinal}</button>
     `;
     card.querySelector('.btn-tomar').onclick=async()=>{
-      if(!conductorData) return alert("Cargando datos del conductor...");
+      if(!conductorData) return alert("Cargando datos...");
       await updateDoc(doc(db,"servicios_prueba",v.id),{
         estado:"tomado", tomadoEn:new Date().toISOString(),
         conductorNombre:conductorData.nombre, conductorId: conductorData.uid,
-        distanciaConductorOrigen:distCO, distanciaOrigenDestino:distOD, distanciaTotal:total,
-        precioCobrado:precio, tarifaKm:TARIFA_KM, conductorLat:conductorCoords?.lat||null, conductorLng:conductorCoords?.lng||null, vistoPorAdmin:false
+        precioCobrado:precioFinal, tarifaUsada: tarifa
       });
       const telLimpio=(v.telefono||'').replace(/[^0-9]/g,'');
       if(telLimpio){
-        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n📍  ${v.origen}\n🏁 ${v.destino}\n💰 $${precio} MXN`;
+        const msg = `Hola ${v.cliente||''} 👋 Soy ${conductorData.nombre} de CC DRIVERS 🚗\nTu viaje: ${v.origen} → ${v.destino}\n💰 $${precioFinal} MXN • ⏱️ ${minutos} min\nEstoy en camino.`;
         window.open(`https://wa.me/52${telLimpio}?text=${encodeURIComponent(msg)}`,'_blank');
       }
     };
