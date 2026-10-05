@@ -1,7 +1,7 @@
 {
   "name": "CC Drivers",
   "short_name": "CC Drivers",
-  "description": "Aplicación para conductores CC - Gestiona tus viajes, ganancias y rutas de forma rápida y segura.",
+  "description": "Aplicación para viajes - Solicita un conductor privado de manera rápida y segura.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
