@@ -312,6 +312,9 @@ document.getElementById('btn').onclick=async()=>{
     origenCoords=null; destinoCoords=null; precioBox.style.display='none';
   }catch(e){ console.error(e); estado.textContent='❌ '+e; estado.className='err'; estado.style.display='block'; btn.textContent='Solicitar Viaje'; btn.disabled=false; }
 };
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
 </script>
 </body>
 </html>
