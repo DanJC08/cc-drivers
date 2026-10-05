@@ -2,7 +2,7 @@
   "name": "CC Drivers",
   "short_name": "CC Drivers",
   "description": "Aplicación para viajes - Solicita un conductor privado de manera rápida y segura.",
-  "start_url": "/",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
