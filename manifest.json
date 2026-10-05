@@ -1,0 +1,24 @@
+{
+  "name": "CC Drivers",
+  "short_name": "CC Drivers",
+  "description": "Aplicación para conductores CC - Gestiona tus viajes, ganancias y rutas de forma rápida y segura.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "logo-192.jpg",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo-512.jpg",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
