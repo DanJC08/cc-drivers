@@ -5,6 +5,7 @@
   "id": "/cc-drivers/",
   "start_url": "/cc-drivers/",
   "scope": "/cc-drivers/",
+  "orientation": "any",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
