@@ -159,11 +159,9 @@ async function render(){
   lista.innerHTML='';
   if(totalViajes===0){lista.innerHTML='<div class="vacio"><div>☕️</div>Sin viajes</div>';return;}
 
-  // 1. TOMADOS - PRECIO FIJO DEL CLIENTE
   for(let v of viajesTomados){
     const distOD = v.distanciaOrigenDestino || v.distanciaTotal || 0;
     const distCO = v.distanciaConductorOrigen || 0;
-    // FIX: prioridad al precio ya guardado
     const precio = v.precioCobrado || v.precio || v.precioCliente || v.precioEstimado || calcularPrecio(distOD);
     const card=document.createElement('div'); card.className='card activo'; card.dataset.tipo="tomado";
     card.innerHTML=`
@@ -186,15 +184,11 @@ async function render(){
     lista.appendChild(card);
   }
 
-  // 2. PENDIENTES - PRECIO FIJO DEL CLIENTE, NO SUMAR distCO
   for(let v of viajesPendientes){
     const distOD = v.distanciaOrigenDestino || v.distanciaTotal || v.distancia || 0;
     let distCO = 0;
     if(conductorCoords && v.origenLat && v.origenLng){ distCO = calcKm(conductorCoords, {lat:v.origenLat, lng:v.origenLng})*1.3; }
-    
-    // FIX: Si el doc ya trae precio del cliente, se usa. Si no, se calcula SOLO con distOD
     const precioFijo = v.precio || v.precioCliente || v.precioEstimado || calcularPrecio(distOD);
-    
     const horaHtml = v.fechaHoraProgramada? `<div class="hora-pill prog">⏰ ${new Date(v.fechaHoraProgramada).toLocaleString('es-MX',{dateStyle:'short', timeStyle:'short'})}</div>` : `<div class="hora-pill ahora">🔥 AHORA • A ${distCO? distCO.toFixed(1)+' km de ti' : 'cerca'}</div>`;
     const card=document.createElement('div'); card.className='card'; card.dataset.tipo="pendiente";
     card.innerHTML=`
@@ -205,7 +199,7 @@ async function render(){
         <div class="line"><div class="dot-d"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">DESTINO <span class="dist-tag2">${distOD? distOD.toFixed(1)+' km' : ''}</span></small><br><b>${v.destino}</b></div></div>
       </div>
       <div class="precio-box">
-        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km viaje • Estás a ${distCO ? distCO.toFixed(1)+' km del origen' : 'calculando...'}</small></div>
+        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km viaje • Estás a ${distCO? distCO.toFixed(1)+' km del origen' : 'calculando...'}</small></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precioFijo} MXN</b><span style="font-size:11px;color:#C5A880">Precio cliente</span></div>
       </div>
       <button class="btn-tomar">Tomar viaje</button>
@@ -216,15 +210,16 @@ async function render(){
       await updateDoc(doc(db,"servicios_prueba",v.id),{
         estado:"tomado", tomadoEn:new Date().toISOString(),
         conductorNombre:conductorData.nombre, conductorId: conductorData.uid,
-        distanciaConductorOrigen:distCO, 
-        distanciaOrigenDestino:distOD, 
-        distanciaTotal:distOD, // Solo viaje, no sumado
-        precioCobrado:precioFijo, 
+        distanciaConductorOrigen:distCO,
+        distanciaOrigenDestino:distOD,
+        distanciaTotal:distOD,
+        precioCobrado:precioFijo,
         tarifaKm:tarifa.por_km, tarifaUsada:tarifa, conductorLat:conductorCoords?.lat||null, conductorLng:conductorCoords?.lng||null, vistoPorAdmin:false
       });
       const telLimpio=(v.telefono||'').replace(/[^0-9]/g,'');
       if(telLimpio){
-        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n📍 ${v.origen}\n🏁 ${v.destino}\n💰 $${precioFijo} MXN`;
+        const linkOrigenDestino = `https://www.google.com/maps/dir/?api=1&origin=${v.origenLat},${v.origenLng}&destination=${v.destinoLat},${v.destinoLng}&travelmode=driving`;
+        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n🗺️ Tu ruta:\n${linkOrigenDestino}\n\n💰 $${precioFijo} MXN`;
         window.open(`https://wa.me/52${telLimpio}?text=${encodeURIComponent(msg)}`,'_blank');
       }
     };
