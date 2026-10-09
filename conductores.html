@@ -38,8 +38,9 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 .dot-d{width:16px;height:16px;background:var(--naranja);border-radius:50%;border:3px solid #FFEAD1;flex-shrink:0;margin-top:2px}
 .btn-tomar{width:100%;padding:18px;background:#111;color:#fff;border:0;border-radius:14px;font-weight:800;font-size:17px;margin-top:16px}
 .btn-tomar:active{transform:scale(.97)}
-.btn-finalizar{width:100%;padding:18px;background:var(--azul);color:#C5A880;border:2px solid #C5A880;border-radius:14px;font-weight:800;font-size:17px;margin-top:16px}
-.btn-finalizar:active{transform:scale(.97)}
+.btn-finalizar{width:100%;padding:18px;background:var(--azul);color:#C5A880;border:2px solid #C5A880;border-radius:14px;font-weight:800;font-size:17px;margin-top:12px}
+.btn-navegar{width:100%;padding:16px;background:#fff;color:#0A1931;border:2px solid #0A1931;border-radius:14px;font-weight:800;font-size:15px;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-navegar:active{transform:scale(.97); background:#F2F2F7}
 .vacio{text-align:center;padding:80px 20px;color:#8E8E93}
 .tab-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.08);padding:12px 20px 30px;display:flex;justify-content:space-between}
 .tab-bar a{color:var(--azul);text-decoration:none;font-size:13px;font-weight:600;opacity:.6}
@@ -93,12 +94,17 @@ try{
 
 let conductorCoords = null; let conductorData = null; let viajesPendientes = []; let viajesTomados = []; let prevCount = -1;
 let unsubPendientes = null; let unsubTomados = null;
+let ultimoUpdate = 0;
+let watchId = null;
 
 const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/24/audio_b9bd4170e8.mp3'); audio.preload='auto'; let audioListo=false;
 function desbloquearAudio(){ if(audioListo) return; audio.play().then(()=>{audio.pause();audio.currentTime=0;audioListo=true;}).catch(()=>{}); }
 document.addEventListener('click', desbloquearAudio, {once:true}); document.addEventListener('touchstart', desbloquearAudio, {once:true});
 function sonar(){ desbloquearAudio(); audio.currentTime=0; audio.play().catch(()=>{}); if(navigator.vibrate) navigator.vibrate([400,100,400,100,400]); let o=document.title; document.title="🔥 ¡NUEVO VIAJE! 🔥"; setTimeout(()=>document.title=o,2000); }
-document.getElementById('logout').onclick=async()=>{ await signOut(auth); location.href="login-conductores.html"; }
+document.getElementById('logout').onclick=async()=>{
+  if(watchId) navigator.geolocation.clearWatch(watchId);
+  await signOut(auth); location.href="login-conductores.html";
+}
 
 onAuthStateChanged(auth, async (user)=>{
   if(!user){ window.location.href="login-conductores.html"; return; }
@@ -147,11 +153,47 @@ function actualizarDistancias(){
     if(tag) tag.textContent = distCO.toFixed(1)+' km de ti';
   });
 }
-navigator.geolocation.watchPosition(pos=>{
+
+// GPS CADA 1 MINUTO
+watchId = navigator.geolocation.watchPosition(pos=>{
   conductorCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
-  if(conductorData) subInfo.textContent = `👋 ${conductorData.nombre} • Ubicación activa ✅ • Base $${tarifa.base} + $${tarifa.por_km}/km`;
+  if(conductorData) subInfo.textContent = `👋 ${conductorData.nombre} • En viaje • Actualiza cada 1 min`;
+  const ahora = Date.now();
+  if(ahora - ultimoUpdate > 60000 && viajesTomados.length>0){
+    ultimoUpdate = ahora;
+    viajesTomados.forEach(v=>{
+      updateDoc(doc(db,"servicios_prueba",v.id),{
+        conductorLat: conductorCoords.lat,
+        conductorLng: conductorCoords.lng,
+        conductorLastUpdate: new Date().toISOString()
+      });
+    });
+  }
   actualizarDistancias();
-}, ()=>{ subInfo.textContent=`Base $${tarifa.base} • Sin GPS`; }, {enableHighAccuracy:true, maximumAge:30000, timeout:10000});
+}, ()=>{ subInfo.textContent=`Base $${tarifa.base} • Sin GPS`; }, {enableHighAccuracy:true, maximumAge:30000, timeout:15000});
+
+function abrirNavegacion(v, tipo='completo'){
+  const oLat = v.origenLat, oLng = v.origenLng, dLat = v.destinoLat, dLng = v.destinoLng;
+  let url = '';
+  if(tipo === 'origen'){
+    // Solo al origen del cliente
+    url = `https://www.google.com/maps/dir/?api=1&destination=${oLat},${oLng}&travelmode=driving`;
+    if(conductorCoords) url = `https://www.google.com/maps/dir/?api=1&origin=${conductorCoords.lat},${conductorCoords.lng}&destination=${oLat},${oLng}&travelmode=driving`;
+  } else if(tipo === 'destino'){
+    // Del origen al destino
+    url = `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}&travelmode=driving`;
+  } else {
+    // Ruta completa: tu ubicación -> origen -> destino
+    if(conductorCoords && oLat && dLat){
+      url = `https://www.google.com/maps/dir/?api=1&origin=${conductorCoords.lat},${conductorCoords.lng}&destination=${dLat},${dLng}&waypoints=${oLat},${oLng}&travelmode=driving`;
+    } else if(oLat && dLat){
+      url = `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}&travelmode=driving`;
+    } else {
+      url = `https://www.google.com/maps/dir/${encodeURIComponent(v.origen)}/${encodeURIComponent(v.destino)}/`;
+    }
+  }
+  window.open(url, '_blank');
+}
 
 async function render(){
   const totalViajes = viajesPendientes.length + viajesTomados.length;
@@ -175,10 +217,15 @@ async function render(){
         <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km de viaje • Precio fijo cliente</small></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precio} MXN</b><span style="font-size:11px;color:#C5A880">En curso</span></div>
       </div>
+      <button class="btn-navegar btn-nav-origen">🧭 Navegar a cliente</button>
+      <button class="btn-navegar btn-nav-completo" style="background:#0A1931;color:#C5A880">📍 Ruta completa: Origen → Destino</button>
       <button class="btn-finalizar">✅ Finalizar viaje</button>
     `;
+    card.querySelector('.btn-nav-origen').onclick=()=>abrirNavegacion(v,'origen');
+    card.querySelector('.btn-nav-completo').onclick=()=>abrirNavegacion(v,'completo');
     card.querySelector('.btn-finalizar').onclick=async()=>{
       if(!confirm(`¿Finalizar viaje de ${v.cliente}?\n$${precio} MXN`)) return;
+      if(watchId) navigator.geolocation.clearWatch(watchId);
       await updateDoc(doc(db,"servicios_prueba",v.id),{ estado:"finalizado", finalizadoEn:new Date().toISOString() });
     };
     lista.appendChild(card);
@@ -199,7 +246,7 @@ async function render(){
         <div class="line"><div class="dot-d"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">DESTINO <span class="dist-tag2">${distOD? distOD.toFixed(1)+' km' : ''}</span></small><br><b>${v.destino}</b></div></div>
       </div>
       <div class="precio-box">
-        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km viaje • Estás a ${distCO? distCO.toFixed(1)+' km del origen' : 'calculando...'}</small></div>
+        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km viaje</small></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precioFijo} MXN</b><span style="font-size:11px;color:#C5A880">Precio cliente</span></div>
       </div>
       <button class="btn-tomar">Tomar viaje</button>
@@ -218,8 +265,7 @@ async function render(){
       });
       const telLimpio=(v.telefono||'').replace(/[^0-9]/g,'');
       if(telLimpio){
-        const linkOrigenDestino = `https://www.google.com/maps/dir/?api=1&origin=${v.origenLat},${v.origenLng}&destination=${v.destinoLat},${v.destinoLng}&travelmode=driving`;
-        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n🗺️ Tu ruta:\n${linkOrigenDestino}\n\n💰 $${precioFijo} MXN`;
+        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n📍 ${v.origen}\n🏁 ${v.destino}\n💰 $${precioFijo} MXN`;
         window.open(`https://wa.me/52${telLimpio}?text=${encodeURIComponent(msg)}`,'_blank');
       }
     };
