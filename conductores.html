@@ -38,9 +38,11 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 .dot-d{width:16px;height:16px;background:var(--naranja);border-radius:50%;border:3px solid #FFEAD1;flex-shrink:0;margin-top:2px}
 .btn-tomar{width:100%;padding:18px;background:#111;color:#fff;border:0;border-radius:14px;font-weight:800;font-size:17px;margin-top:16px}
 .btn-tomar:active{transform:scale(.97)}
-.btn-finalizar{width:100%;padding:18px;background:var(--azul);color:#C5A880;border:2px solid #C5A880;border-radius:14px;font-weight:800;font-size:17px;margin-top:12px}
-.btn-navegar{width:100%;padding:16px;background:#fff;color:#0A1931;border:2px solid #0A1931;border-radius:14px;font-weight:800;font-size:15px;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-navegar:active{transform:scale(.97); background:#F2F2F7}
+.btn-finalizar{flex:1;padding:18px;background:var(--azul);color:#C5A880;border:2px solid #C5A880;border-radius:14px;font-weight:800;font-size:17px}
+.btn-finalizar:active{transform:scale(.97)}
+.btn-maps-icon{width:56px;height:56px;background:#fff;color:#0A1931;border:2px solid #0A1931;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-maps-icon:active{transform:scale(.95);background:#F2F2F7}
+.row-acciones{display:flex;gap:10px;margin-top:14px;align-items:center}
 .vacio{text-align:center;padding:80px 20px;color:#8E8E93}
 .tab-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.08);padding:12px 20px 30px;display:flex;justify-content:space-between}
 .tab-bar a{color:var(--azul);text-decoration:none;font-size:13px;font-weight:600;opacity:.6}
@@ -154,7 +156,6 @@ function actualizarDistancias(){
   });
 }
 
-// GPS CADA 1 MINUTO
 watchId = navigator.geolocation.watchPosition(pos=>{
   conductorCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
   if(conductorData) subInfo.textContent = `👋 ${conductorData.nombre} • En viaje • Actualiza cada 1 min`;
@@ -172,25 +173,15 @@ watchId = navigator.geolocation.watchPosition(pos=>{
   actualizarDistancias();
 }, ()=>{ subInfo.textContent=`Base $${tarifa.base} • Sin GPS`; }, {enableHighAccuracy:true, maximumAge:30000, timeout:15000});
 
-function abrirNavegacion(v, tipo='completo'){
-  const oLat = v.origenLat, oLng = v.origenLng, dLat = v.destinoLat, dLng = v.destinoLng;
+function abrirNavegacion(v){
+  // RUTA COMPLETA: Tu ubicación -> Origen cliente -> Destino
   let url = '';
-  if(tipo === 'origen'){
-    // Solo al origen del cliente
-    url = `https://www.google.com/maps/dir/?api=1&destination=${oLat},${oLng}&travelmode=driving`;
-    if(conductorCoords) url = `https://www.google.com/maps/dir/?api=1&origin=${conductorCoords.lat},${conductorCoords.lng}&destination=${oLat},${oLng}&travelmode=driving`;
-  } else if(tipo === 'destino'){
-    // Del origen al destino
-    url = `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}&travelmode=driving`;
+  if(conductorCoords && v.origenLat && v.destinoLat){
+    url = `https://www.google.com/maps/dir/?api=1&origin=${conductorCoords.lat},${conductorCoords.lng}&destination=${v.destinoLat},${v.destinoLng}&waypoints=${v.origenLat},${v.origenLng}&travelmode=driving`;
+  } else if(v.origenLat && v.destinoLat){
+    url = `https://www.google.com/maps/dir/?api=1&origin=${v.origenLat},${v.origenLng}&destination=${v.destinoLat},${v.destinoLng}&travelmode=driving`;
   } else {
-    // Ruta completa: tu ubicación -> origen -> destino
-    if(conductorCoords && oLat && dLat){
-      url = `https://www.google.com/maps/dir/?api=1&origin=${conductorCoords.lat},${conductorCoords.lng}&destination=${dLat},${dLng}&waypoints=${oLat},${oLng}&travelmode=driving`;
-    } else if(oLat && dLat){
-      url = `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}&travelmode=driving`;
-    } else {
-      url = `https://www.google.com/maps/dir/${encodeURIComponent(v.origen)}/${encodeURIComponent(v.destino)}/`;
-    }
+    url = `https://www.google.com/maps/dir/${encodeURIComponent(v.origen)}/${encodeURIComponent(v.destino)}/`;
   }
   window.open(url, '_blank');
 }
@@ -217,12 +208,14 @@ async function render(){
         <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km de viaje • Precio fijo cliente</small></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precio} MXN</b><span style="font-size:11px;color:#C5A880">En curso</span></div>
       </div>
-      <button class="btn-navegar btn-nav-origen">🧭 Navegar a cliente</button>
-      <button class="btn-navegar btn-nav-completo" style="background:#0A1931;color:#C5A880">📍 Ruta completa: Origen → Destino</button>
-      <button class="btn-finalizar">✅ Finalizar viaje</button>
+      <div class="row-acciones">
+        <button class="btn-finalizar">✅ Finalizar viaje</button>
+        <button class="btn-maps-icon btn-nav-completo" title="Ruta completa en Google Maps">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16"/><path d="M16 6v16"/></svg>
+        </button>
+      </div>
     `;
-    card.querySelector('.btn-nav-origen').onclick=()=>abrirNavegacion(v,'origen');
-    card.querySelector('.btn-nav-completo').onclick=()=>abrirNavegacion(v,'completo');
+    card.querySelector('.btn-nav-completo').onclick=()=>abrirNavegacion(v);
     card.querySelector('.btn-finalizar').onclick=async()=>{
       if(!confirm(`¿Finalizar viaje de ${v.cliente}?\n$${precio} MXN`)) return;
       if(watchId) navigator.geolocation.clearWatch(watchId);
@@ -265,7 +258,8 @@ async function render(){
       });
       const telLimpio=(v.telefono||'').replace(/[^0-9]/g,'');
       if(telLimpio){
-        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n📍 ${v.origen}\n🏁 ${v.destino}\n💰 $${precioFijo} MXN`;
+        const linkOrigenDestino = `https://www.google.com/maps/dir/?api=1&origin=${v.origenLat},${v.origenLng}&destination=${v.destinoLat},${v.destinoLng}&travelmode=driving`;
+        const msg = `Hola ${v.cliente||''} 👋\nSoy ${conductorData.nombre}, tu conductor de CC DRIVERS 🚗\nEstoy en camino.\n\n🗺️ Tu ruta:\n${linkOrigenDestino}\n\n💰 $${precioFijo} MXN`;
         window.open(`https://wa.me/52${telLimpio}?text=${encodeURIComponent(msg)}`,'_blank');
       }
     };
