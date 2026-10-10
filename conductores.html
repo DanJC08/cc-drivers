@@ -66,7 +66,6 @@ import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, get
 const firebaseConfig = {apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
 const app=initializeApp(firebaseConfig); const db=getFirestore(app); const auth=getAuth(app);
 const lista=document.getElementById('lista'), contador=document.getElementById('contador'), subInfo=document.getElementById('subInfo');
-
 let tarifa = {base:20, por_km:10, por_min:1.5, minimo:35, factor_demanda:1.0, extra_nocturno:10, extra_lluvia:0};
 try{
   const snapTarifa = await getDoc(doc(db,"config","tarifas"));
@@ -93,12 +92,10 @@ try{
     render();
   });
 }catch(e){}
-
 let conductorCoords = null; let conductorData = null; let viajesPendientes = []; let viajesTomados = []; let prevCount = -1;
 let unsubPendientes = null; let unsubTomados = null;
 let ultimoUpdate = 0;
 let watchId = null;
-
 const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/24/audio_b9bd4170e8.mp3'); audio.preload='auto'; let audioListo=false;
 function desbloquearAudio(){ if(audioListo) return; audio.play().then(()=>{audio.pause();audio.currentTime=0;audioListo=true;}).catch(()=>{}); }
 document.addEventListener('click', desbloquearAudio, {once:true}); document.addEventListener('touchstart', desbloquearAudio, {once:true});
@@ -107,7 +104,6 @@ document.getElementById('logout').onclick=async()=>{
   if(watchId) navigator.geolocation.clearWatch(watchId);
   await signOut(auth); location.href="login-conductores.html";
 }
-
 onAuthStateChanged(auth, async (user)=>{
   if(!user){ window.location.href="login-conductores.html"; return; }
   try{
@@ -115,7 +111,6 @@ onAuthStateChanged(auth, async (user)=>{
     if(!snap.exists() || snap.data().estado!=="aprobado"){ await signOut(auth); window.location.href="login-conductores.html"; return; }
     conductorData = {uid:user.uid,...snap.data()};
     subInfo.textContent = `👋 ${conductorData.nombre} • Base $${tarifa.base} • GPS buscando...`;
-
     if(unsubPendientes) unsubPendientes();
     const qPend = query(collection(db,"servicios_prueba"),where("estado","in",["pendiente","programado"]),limit(20));
     unsubPendientes = onSnapshot(qPend, (snap)=>{
@@ -124,17 +119,14 @@ onAuthStateChanged(auth, async (user)=>{
       if(prevCount!==-1 && nuevos.length>prevCount) sonar();
       prevCount=nuevos.length; viajesPendientes=nuevos; render();
     }, (err)=>{ lista.innerHTML=`<div style="padding:20px;color:red">Error viajes: ${err.message}</div>`; });
-
     if(unsubTomados) unsubTomados();
     const qTom = query(collection(db,"servicios_prueba"),where("estado","==","tomado"),where("conductorId","==",user.uid));
     unsubTomados = onSnapshot(qTom, (snap)=>{
       const arr=[]; snap.forEach(d=>arr.push({id:d.id,...d.data()}));
       viajesTomados = arr; render();
     });
-
   }catch(e){ subInfo.textContent = "Error leyendo perfil: "+e.message; }
 });
-
 function calcKm(a,b){ const R=6371; const dLat=(b.lat-a.lat)*Math.PI/180; const dLng=(b.lng-a.lng)*Math.PI/180; const s=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2; return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s)); }
 function calcularPrecio(distKm){
   const min = (distKm/30)*60;
@@ -155,7 +147,6 @@ function actualizarDistancias(){
     if(tag) tag.textContent = distCO.toFixed(1)+' km de ti';
   });
 }
-
 watchId = navigator.geolocation.watchPosition(pos=>{
   conductorCoords = {lat:pos.coords.latitude, lng:pos.coords.longitude};
   if(conductorData) subInfo.textContent = `👋 ${conductorData.nombre} • En viaje • Actualiza cada 1 min`;
@@ -172,9 +163,7 @@ watchId = navigator.geolocation.watchPosition(pos=>{
   }
   actualizarDistancias();
 }, ()=>{ subInfo.textContent=`Base $${tarifa.base} • Sin GPS`; }, {enableHighAccuracy:true, maximumAge:30000, timeout:15000});
-
 function abrirNavegacion(v){
-  // RUTA COMPLETA: Tu ubicación -> Origen cliente -> Destino
   let url = '';
   if(conductorCoords && v.origenLat && v.destinoLat){
     url = `https://www.google.com/maps/dir/?api=1&origin=${conductorCoords.lat},${conductorCoords.lng}&destination=${v.destinoLat},${v.destinoLng}&waypoints=${v.origenLat},${v.origenLng}&travelmode=driving`;
@@ -185,13 +174,11 @@ function abrirNavegacion(v){
   }
   window.open(url, '_blank');
 }
-
 async function render(){
   const totalViajes = viajesPendientes.length + viajesTomados.length;
   contador.textContent = totalViajes;
   lista.innerHTML='';
   if(totalViajes===0){lista.innerHTML='<div class="vacio"><div>☕️</div>Sin viajes</div>';return;}
-
   for(let v of viajesTomados){
     const distOD = v.distanciaOrigenDestino || v.distanciaTotal || 0;
     const distCO = v.distanciaConductorOrigen || 0;
@@ -211,7 +198,7 @@ async function render(){
       <div class="row-acciones">
         <button class="btn-finalizar">✅ Finalizar viaje</button>
         <button class="btn-maps-icon btn-nav-completo" title="Ruta completa en Google Maps">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16"/><path d="M16 6v16"/></svg>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#0A1931" stroke="#0A1931" stroke-width="1.5" stroke-linejoin="round"><path d="M3 11L21 3L13 21L10 13L3 11Z"/></svg>
         </button>
       </div>
     `;
@@ -223,7 +210,6 @@ async function render(){
     };
     lista.appendChild(card);
   }
-
   for(let v of viajesPendientes){
     const distOD = v.distanciaOrigenDestino || v.distanciaTotal || v.distancia || 0;
     let distCO = 0;
