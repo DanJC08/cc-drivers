@@ -99,7 +99,7 @@ let unsubPendientes = null; let unsubTomados = null;
 let ultimoUpdate = 0;
 let watchId = null;
 
-const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/24/audio_b9bd4170e8.mp3'); audio.preload='auto'; let audioListo=false;
+const audio = new Audio('./mk64_toad01.wav'); audio.preload='auto'; audio.volume = 1.0; let audioListo=false;
 function desbloquearAudio(){ if(audioListo) return; audio.play().then(()=>{audio.pause();audio.currentTime=0;audioListo=true;}).catch(()=>{}); }
 document.addEventListener('click', desbloquearAudio, {once:true}); document.addEventListener('touchstart', desbloquearAudio, {once:true});
 function sonar(){ desbloquearAudio(); audio.currentTime=0; audio.play().catch(()=>{}); if(navigator.vibrate) navigator.vibrate([400,100,400,100,400]); let o=document.title; document.title="🔥 ¡NUEVO VIAJE! 🔥"; setTimeout(()=>document.title=o,2000); }
