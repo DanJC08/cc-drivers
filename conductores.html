@@ -28,21 +28,21 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 .ahora{background:#E6FFF0;color:#0a7a2f;border:1px solid #b6f5c6}
 .dist-tag{background:#0A1931;color:#C5A880;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px}
 .dist-tag2{background:#FF7A00;color:#fff;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px}
-.precio-box{background:#111;color:#fff;border-radius:14px;padding:12px 14px;flex:1}
+.precio-box{background:#111;color:#fff;border-radius:14px;padding:12px 14px;flex:1;display:flex;flex-direction:column;justify-content:center}
 .precio-box b{font-size:22px;color:#C5A880}
 .ruta{position:relative;padding-left:28px}
 .ruta::before{content:'';position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:repeating-linear-gradient(to bottom, #D1D1D6 0 4px, transparent 4px 8px)}
 .line{display:flex;gap:10px;margin:14px 0;align-items:flex-start}
 .dot-o{width:16px;height:16px;background:var(--azul);border-radius:50%;border:3px solid #E5EFFF;flex-shrink:0;margin-top:2px}
 .dot-d{width:16px;height:16px;background:var(--naranja);border-radius:50%;border:3px solid #FFEAD1;flex-shrink:0;margin-top:2px}
-.btn-tomar{width:100%;padding:18px;background:#111;color:#fff;border:0;border-radius:14px;font-weight:800;font-size:17px;margin-top:16px}
+.btn-tomar{flex:1;padding:18px;background:#111;color:#fff;border:0;border-radius:14px;font-weight:800;font-size:17px}
 .btn-tomar:active{transform:scale(.97)}
-.btn-finalizar{width:100%;padding:18px;background:var(--azul);color:#C5A880;border:2px solid #C5A880;border-radius:14px;font-weight:800;font-size:17px;margin-top:12px}
+.btn-finalizar{flex:1;padding:18px;background:var(--azul);color:#C5A880;border:2px solid #C5A880;border-radius:14px;font-weight:800;font-size:17px}
 .btn-finalizar:active{transform:scale(.97)}
-.btn-maps-icon{width:56px;height:56px;background:#fff;color:#0A1931;border:2px solid #0A1931;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-maps-icon{width:56px;height:56px;min-width:56px;background:#fff;color:#0A1931;border:2px solid #0A1931;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .btn-maps-icon:active{transform:scale(.95);background:#F2F2F7}
 .row-precio{display:flex;gap:10px;margin-top:12px;align-items:stretch}
-.col-iconos{display:flex;flex-direction:column;gap:10px}
+.row-acciones{display:flex;gap:10px;margin-top:10px;align-items:stretch}
 .vacio{text-align:center;padding:80px 20px;color:#8E8E93}
 .tab-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.08);padding:12px 20px 30px;display:flex;justify-content:space-between}
 .tab-bar a{color:var(--azul);text-decoration:none;font-size:13px;font-weight:600;opacity:.6}
@@ -174,16 +174,16 @@ async function render(){
           <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km de viaje • Precio fijo cliente</small></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precio} MXN</b><span style="font-size:11px;color:#C5A880">En curso</span></div>
         </div>
-        <div class="col-iconos">
-          <button class="btn-maps-icon btn-wsp" style="background:#25D366;border-color:#25D366;" title="WhatsApp">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M19.05 4.94A9.82 9.82 0 0 0 12 1C6.49 1 2 5.38 2 10.79c0 1.73.52 3.43 1.5 4.88L2 23l7.58-1.98a9.7 9.7 0 0 0 2.42.32h.01c5.51 0 10-4.38 10-9.79 0-2.61-1.04-5.06-2.96-6.61Zm-7.05 15.2h-.01a8.08 8.08 0 0 1-4.12-1.12l-.29-.17-4.5 1.18 1.2-4.33-.19-.33a8.13 8.13 0 0 1-1.26-4.31c0-4.48 3.73-8.12 8.32-8.12 2.22 0 4.31.85 5.88 2.39a8.03 8.03 0 0 1 2.44 5.74c0 4.48-3.73 8.12-8.32 8.12Zm4.56-6.08c-.25-.12-1.47-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.25-.64.8-.78.97-.14.16-.29.19-.54.06-.25-.12-1.05-.38-2-1.22-.74-.65-1.24-1.45-1.38-1.69-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.55-1.32-.75-1.8-.2-.47-.4-.41-.55-.41h-.47c-.16 0-.43.06-.65.31-.22.25-.84.81-.84 1.98s.86 2.29.98 2.45c.12.16 1.7 2.57 4.11 3.6.57.24 1.02.38 1.37.49.57.18 1.09.15 1.5.09.46-.07 1.47-.59 1.67-1.16.21-.57.21-1.06.14-1.16-.06-.1-.23-.16-.48-.28Z"/></svg>
-          </button>
-          <button class="btn-maps-icon btn-nav-completo" title="Ruta">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#0A84FF" stroke="#0A84FF" stroke-width="2" stroke-linejoin="round"><path d="M3 11L22 2L13 21L11 13L3 11Z"/></svg>
-          </button>
-        </div>
+        <button class="btn-maps-icon btn-wsp" title="WhatsApp">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#25D366"><path d="M19.05 4.94A9.82 9.82 0 0 0 12 1C6.49 1 2 5.38 2 10.79c0 1.73.52 3.43 1.5 4.88L2 23l7.58-1.98a9.7 9.7 0 0 0 2.42.32h.01c5.51 0 10-4.38 10-9.79 0-2.61-1.04-5.06-2.96-6.61Zm-7.05 15.2h-.01a8.08 8.08 0 0 1-4.12-1.12l-.29-.17-4.5 1.18 1.2-4.33-.19-.33a8.13 8.13 0 0 1-1.26-4.31c0-4.48 3.73-8.12 8.32-8.12 2.22 0 4.31.85 5.88 2.39a8.03 8.03 0 0 1 2.44 5.74c0 4.48-3.73 8.12-8.32 8.12Zm4.56-6.08c-.25-.12-1.47-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.25-.64.8-.78.97-.14.16-.29.19-.54.06-.25-.12-1.05-.38-2-1.22-.74-.65-1.24-1.45-1.38-1.69-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.55-1.32-.75-1.8-.2-.47-.4-.41-.55-.41h-.47c-.16 0-.43.06-.65.31-.22.25-.84.81-.84 1.98s.86 2.29.98 2.45c.12.16 1.7 2.57 4.11 3.6.57.24 1.02.38 1.37.49.57.18 1.09.15 1.5.09.46-.07 1.47-.59 1.67-1.16.21-.57.21-1.06.14-1.16-.06-.1-.23-.16-.48-.28Z"/></svg>
+        </button>
       </div>
-      <button class="btn-finalizar">✅ Finalizar viaje</button>
+      <div class="row-acciones">
+        <button class="btn-finalizar">✅ Finalizar viaje</button>
+        <button class="btn-maps-icon btn-nav-completo" title="Navegación">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#0A84FF" stroke="#0A84FF" stroke-width="2" stroke-linejoin="round"><path d="M3 11L22 2L13 21L11 13L3 11Z"/></svg>
+        </button>
+      </div>
     `;
     card.querySelector('.btn-nav-completo').onclick=()=>abrirNavegacion(v);
     card.querySelector('.btn-wsp').onclick=()=>{
@@ -212,12 +212,20 @@ async function render(){
         <div class="line"><div class="dot-o"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">RECOGER <span class="dist-tag">${distCO? distCO.toFixed(1)+' km de ti' : 'calculando...'}</span></small><br><b>${v.origen}</b></div></div>
         <div class="line"><div class="dot-d"></div><div><small style="color:#8E8E93;font-size:11px;font-weight:700">DESTINO <span class="dist-tag2">${distOD? distOD.toFixed(1)+' km' : ''}</span></small><br><b>${v.destino}</b></div></div>
       </div>
-      <div class="precio-box" style="margin-top:12px">
-        <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km viaje</small></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precioFijo} MXN</b><span style="font-size:11px;color:#C5A880">Precio cliente</span></div>
+      <div class="row-precio">
+        <div class="precio-box">
+          <div style="display:flex;justify-content:space-between"><small style="color:#8E8E93" class="precio-detalle">${distOD.toFixed(1)} km viaje</small></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b class="precio-valor">$${precioFijo} MXN</b><span style="font-size:11px;color:#C5A880">Precio cliente</span></div>
+        </div>
       </div>
-      <button class="btn-tomar">Tomar viaje</button>
+      <div class="row-acciones">
+        <button class="btn-tomar">Tomar viaje</button>
+        <button class="btn-maps-icon btn-nav-pend" title="Navegación">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#0A84FF" stroke="#0A84FF" stroke-width="2" stroke-linejoin="round"><path d="M3 11L22 2L13 21L11 13L3 11Z"/></svg>
+        </button>
+      </div>
     `;
+    card.querySelector('.btn-nav-pend').onclick=()=>abrirNavegacion(v);
     card.querySelector('.btn-tomar').onclick=async()=>{
       if(viajesTomados.length>0) return alert("Ya tienes un viaje en curso. Finalízalo primero.");
       if(!conductorData) return alert("Cargando datos del conductor...");
