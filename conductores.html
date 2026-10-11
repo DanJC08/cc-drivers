@@ -102,9 +102,30 @@ let watchId = null;
 const audio = new Audio('/mk64_toad01.wav'); audio.preload='auto'; audio.volume = 1.0; let audioListo=false;
 function desbloquearAudio(){ if(audioListo) return; audio.play().then(()=>{audio.pause();audio.currentTime=0;audioListo=true;}).catch(()=>{}); }
 document.addEventListener('click', desbloquearAudio, {once:true}); document.addEventListener('touchstart', desbloquearAudio, {once:true});
-function sonar(){ desbloquearAudio(); audio.currentTime=0; audio.play().catch(()=>{}); if(navigator.vibrate) navigator.vibrate([400,100,400,100,400]); let o=document.title; document.title="🔥 ¡NUEVO VIAJE! 🔥"; setTimeout(()=>document.title=o,2000); }
+
+let intervaloAlerta = null;
+function sonar(){
+  desbloquearAudio();
+  audio.currentTime=0;
+  audio.play().catch(()=>{});
+  if(navigator.vibrate) navigator.vibrate([500,200,500,200,800]);
+  let o=document.title; document.title="🔥 ¡NUEVO VIAJE! 🔥";
+  setTimeout(()=>document.title=o,2000);
+}
+function iniciarAlerta(){
+  detenerAlerta();
+  sonar();
+  intervaloAlerta = setInterval(()=>{ sonar(); }, 2000);
+}
+function detenerAlerta(){
+  if(intervaloAlerta){ clearInterval(intervaloAlerta); intervaloAlerta=null; }
+  if(navigator.vibrate) navigator.vibrate(0);
+  document.title="CC Conductores";
+}
+
 document.getElementById('logout').onclick=async()=>{
   if(watchId) navigator.geolocation.clearWatch(watchId);
+  detenerAlerta();
   await signOut(auth); location.href="login-conductores.html";
 }
 
@@ -121,7 +142,8 @@ onAuthStateChanged(auth, async (user)=>{
     unsubPendientes = onSnapshot(qPend, (snap)=>{
       const nuevos=[]; snap.forEach(d=>nuevos.push({id:d.id,...d.data()}));
       nuevos.sort((a,b)=>{ if(a.estado==='pendiente'&&b.estado==='programado')return -1; if(a.estado==='programado'&&b.estado==='pendiente')return 1; return 0; });
-      if(prevCount!==-1 && nuevos.length>prevCount) sonar();
+      if(prevCount!==-1 && nuevos.length>prevCount) iniciarAlerta();
+      if(nuevos.length===0) detenerAlerta();
       prevCount=nuevos.length; viajesPendientes=nuevos; render();
     }, (err)=>{ lista.innerHTML=`<div style="padding:20px;color:red">Error viajes: ${err.message}</div>`; });
 
@@ -129,7 +151,9 @@ onAuthStateChanged(auth, async (user)=>{
     const qTom = query(collection(db,"servicios_prueba"),where("estado","==","tomado"),where("conductorId","==",user.uid));
     unsubTomados = onSnapshot(qTom, (snap)=>{
       const arr=[]; snap.forEach(d=>arr.push({id:d.id,...d.data()}));
-      viajesTomados = arr; render();
+      viajesTomados = arr;
+      if(arr.length>0) detenerAlerta();
+      render();
     });
 
   }catch(e){ subInfo.textContent = "Error leyendo perfil: "+e.message; }
@@ -196,7 +220,7 @@ async function render(){
     const distCO = v.distanciaConductorOrigen || 0;
     const precio = v.precioCobrado || v.precio || v.precioCliente || v.precioEstimado || calcularPrecio(distOD);
     const fechaHoraHtml = v.fechaHoraProgramada
-     ? `<div class="hora-pill prog">⏰ ${new Date(v.fechaHoraProgramada).toLocaleString('es-MX',{dateStyle:'short', timeStyle:'short'})}</div>`
+    ? `<div class="hora-pill prog">⏰ ${new Date(v.fechaHoraProgramada).toLocaleString('es-MX',{dateStyle:'short', timeStyle:'short'})}</div>`
       : `<div class="hora-pill ahora">🔥 AHORA • A ${distCO? distCO.toFixed(1)+' km de ti' : 'cerca'}</div>`;
 
     const card=document.createElement('div'); card.className='card activo'; card.dataset.tipo="tomado";
@@ -220,6 +244,7 @@ async function render(){
     `;
     card.querySelector('.btn-nav-completo').onclick=()=>abrirNavegacion(v);
     card.querySelector('.btn-finalizar').onclick=async()=>{
+      detenerAlerta();
       if(!confirm(`¿Finalizar viaje de ${v.cliente}?\n$${precio} MXN`)) return;
       if(watchId) navigator.geolocation.clearWatch(watchId);
       await updateDoc(doc(db,"servicios_prueba",v.id),{ estado:"finalizado", finalizadoEn:new Date().toISOString() });
@@ -248,6 +273,7 @@ async function render(){
       <button class="btn-tomar">Tomar viaje</button>
     `;
     card.querySelector('.btn-tomar').onclick=async()=>{
+      detenerAlerta();
       if(viajesTomados.length>0) return alert("Ya tienes un viaje en curso. Finalízalo primero.");
       if(!conductorData) return alert("Cargando datos del conductor...");
       await updateDoc(doc(db,"servicios_prueba",v.id),{
