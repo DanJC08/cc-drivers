@@ -1,5 +1,13 @@
+const VERSION = 'cc-drivers-v1.0.8';
 self.addEventListener('install', e => self.skipWaiting());
-self.addEventListener('activate', e => self.clients.claim());
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))));
+  self.clients.claim();
+});
 self.addEventListener('fetch', e => {
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request, {cache: 'no-store'}));
+    return;
+  }
   e.respondWith(fetch(e.request));
 });
