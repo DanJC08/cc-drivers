@@ -15,14 +15,13 @@ body{margin:0;background:#F5F5F7}
 .content{padding:16px;max-width:650px;margin:0 auto}
 .card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)}
 .badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;display:inline-block}
-.pend{background:#FFF7D1;color:#7a5a00}.aprob{background:#E6FFF0;color:#0a7a2f}.bloq{background:#FFE0E0;color:#a00}
+.pend{background:#FFF7D1;color:#7a5a00}.aprob{background:#E6FFF0;color:#0a7a2f}.bloq{background:#FFE0E0;color:#a00}.prog{background:#E0E8FF;color:#0A1931}
 .btn{padding:10px 14px;border-radius:10px;border:0;font-weight:700;font-size:13px;cursor:pointer;margin-right:6px}
 .btn-a{background:#0A1931;color:#fff}.btn-b{background:#FF3B30;color:#fff}.btn-g{background:#F5F5F7}
 .btn-export{background:#0a7a2f;color:#fff;width:100%;padding:14px;font-size:14px;margin-bottom:10px}
 .vacio{text-align:center;padding:60px;color:#8E8E93}
 small{color:#8E8E93}
 .resumen{background:#0A1931;color:#fff;border-radius:12px;padding:14px;margin-bottom:12px;font-size:13px;line-height:1.5}
-/* TARIFAS */
 .input-row{display:flex;gap:10px;margin:10px 0;align-items:center;justify-content:space-between}
 .input-row label{font-weight:700;font-size:13px;flex:1}
 .input-row input{width:100px;padding:10px;border-radius:10px;border:1px solid #ddd;text-align:center;font-weight:800}
@@ -33,6 +32,8 @@ small{color:#8E8E93}
 .switch.on{background:#34C759}
 .switch::after{content:'';position:absolute;width:26px;height:26px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .switch.on::after{left:22px}
+.fechaBox{background:#F0F4FF;border:1px solid #D0DDFF;border-radius:10px;padding:8px 12px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.fechaBox.programado{border-color:#0A1931}
 </style>
 </head>
 <body>
@@ -84,22 +85,48 @@ onSnapshot(qCond, snap=>{
 
 onSnapshot(doc(db,"config","tarifas"), snap=>{
   if(snap.exists()){
-    tarifaCache = {...tarifaCache, ...snap.data()};
+    tarifaCache = {...tarifaCache,...snap.data()};
     if(vista==="tarifas") renderTarifas();
   }
 });
+
+function formatearFechaViaje(v){
+  if(!v.fechaHoraProgramada) return {texto: "Inmediato - ahora", esProgramado: false, esNocturna: v.esNocturna || false};
+  try{
+    const fecha = new Date(v.fechaHoraProgramada);
+    const ahora = new Date();
+    const esHoy = fecha.toDateString() === ahora.toDateString();
+    const manana = new Date(); manana.setDate(ahora.getDate()+1);
+    const esManana = fecha.toDateString() === manana.toDateString();
+    let diaTxt = esHoy? "HOY" : esManana? "MAÑANA" : fecha.toLocaleDateString('es-MX', {weekday:'short', day:'numeric', month:'short'});
+    const horaTxt = fecha.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+    const hora = fecha.getHours();
+    const esNocturna = (hora >= 22 || hora < 6);
+    return {texto: `📅 ${diaTxt} ${horaTxt} ${esNocturna? '🌙 Nocturna' : '☀️ Diurna'}`, esProgramado: true, esNocturna: esNocturna, fechaObj: fecha};
+  }catch(e){
+    return {texto: v.fechaHoraProgramada, esProgramado: true, esNocturna: false};
+  }
+}
 
 function render(){
  lista.innerHTML="";
  if(vista==="viajes"){
    if(cacheViajes.length===0){lista.innerHTML='<div class="vacio">Sin viajes</div>';return;}
    cacheViajes.forEach(v=>{
+     const fechaInfo = formatearFechaViaje(v);
+     const badgeClass = v.estado==='programado'? 'prog' : v.estado==='tomado'? 'aprob' : 'pend';
      const d=document.createElement('div'); d.className='card';
      d.innerHTML=`
-       <div style="display:flex;justify-content:space-between"><b>${v.cliente||'Cliente'}</b><span class="badge ${v.estado==='tomado'?'aprob':'pend'}">${v.estado}</span></div>
+       <div style="display:flex;justify-content:space-between"><b>${v.cliente||'Cliente'}</b><span class="badge ${badgeClass}">${v.estado}</span></div>
        <small>${v.telefono||''} • ${v.conductorNombre? 'Conductor: '+v.conductorNombre : 'Sin conductor'} • $${v.precioEstimado||v.precioCobrado||0}</small>
+
+       <div class="fechaBox ${fechaInfo.esProgramado?'programado':''}">
+         <span><b>${fechaInfo.texto}</b></span>
+         <small>${v.esNocturna? '🌙 + nocturna' : ''}</small>
+       </div>
+
        <div style="margin:8px 0"><small>📍</small> ${v.origen}<br><small>🏁</small> ${v.destino}</div>
-       <div style="display:flex;justify-content:space-between;align-items:center"><b>$${v.precioCobrado||v.precio||0} MXN</b><small>${v.distanciaTotal? v.distanciaTotal.toFixed(1)+' km' : ''} • ${v.tiempoMin||0} min</small></div>
+       <div style="display:flex;justify-content:space-between;align-items:center"><b>$${v.precioCobrado||v.precio||0} MXN</b><small>${v.distanciaTotal? v.distanciaTotal.toFixed(1)+' km' : ''} • ${v.tiempoMin||0} min ${v.extras? '• '+v.extras:''}</small></div>
        <div style="margin-top:10px">
          ${v.estado!=='finalizado'? `<button class="btn btn-g" onclick="window.finViaje('${v.id}')">Finalizar</button>`:''}
          <button class="btn btn-b" onclick="window.delViaje('${v.id}')">Eliminar</button>
@@ -139,7 +166,7 @@ function renderTarifas(){
       <div class="input-row"><label>Por minuto ($)</label><input id="t_min" type="number" step="0.1" value="${tarifaCache.por_min}"></div>
       <div class="input-row"><label>Mínimo ($)</label><input id="t_minimo" type="number" value="${tarifaCache.minimo}"></div>
       <div class="input-row"><label>Extra nocturno (10pm-6am)</label><input id="t_noct" type="number" value="${tarifaCache.extra_nocturno}"></div>
-      
+
       <div style="margin-top:18px"><b>Factor demanda (multiplicador)</b><br><small>1.0 = normal, 1.2 = +20%, 1.5 = +50%</small></div>
       <div class="factor-ctrl">
         <button class="${tarifaCache.factor_demanda==1.0?'active':''}" onclick="window.setFactor(1.0)">1.0 Normal</button>
@@ -159,7 +186,7 @@ function renderTarifas(){
 
       <button class="btn btn-a" style="width:100%;margin-top:16px;padding:16px;font-size:16px" onclick="window.guardarTarifa()">💾 Guardar tarifa</button>
       <div id="msgTarifa" style="margin-top:10px;text-align:center;font-weight:700"></div>
-      
+
       <div class="resumen" style="margin-top:16px">
         <b>Ejemplo ahora:</b><br>
         Viaje 3km = Base $${tarifaCache.base} + 3x$${tarifaCache.por_km} + ${Math.round((3/30)*60)}min x $${tarifaCache.por_min} = $${(tarifaCache.base + 3*tarifaCache.por_km + ((3/30)*60)*tarifaCache.por_min).toFixed(0)} x ${tarifaCache.factor_demanda} ${tarifaCache.extra_nocturno>0? `+ $${tarifaCache.extra_nocturno} nocturno`:''} ${tarifaCache.extra_lluvia>0? `+ $${tarifaCache.extra_lluvia} lluvia`:''}<br>
@@ -215,8 +242,9 @@ function renderCobros(){
   lista.innerHTML=resumenHtml;
   tomados.forEach(v=>{
     const d=document.createElement('div'); d.className='card';
-    const fecha = v.tomadoEn? new Date(v.tomadoEn).toLocaleString('es-MX') : (v.creado? new Date(v.creado.seconds*1000).toLocaleString('es-MX') : '');
-    d.innerHTML=`<div style="display:flex;justify-content:space-between"><b>${v.conductorNombre||'Sin conductor'}</b><small>${fecha}</small></div><small>${v.cliente||''} • ${v.telefono||''}</small><div style="margin:6px 0;font-size:13px">${v.origen} → ${v.destino}</div><div style="display:flex;justify-content:space-between"><span>${(v.distanciaTotal||0).toFixed(1)} km • ${v.tiempoMin||0} min</span><b>$${v.precioCobrado||v.precio||0}</b></div>`;
+    const fecha = v.fechaHoraProgramada? new Date(v.fechaHoraProgramada).toLocaleString('es-MX') : (v.tomadoEn? new Date(v.tomadoEn).toLocaleString('es-MX') : (v.creado? new Date(v.creado.seconds*1000).toLocaleString('es-MX') : ''));
+    const fechaInfo = formatearFechaViaje(v);
+    d.innerHTML=`<div style="display:flex;justify-content:space-between"><b>${v.conductorNombre||'Sin conductor'}</b><small>${fecha}</small></div><small>${v.cliente||''} • ${v.telefono||''}</small><div style="font-size:12px;margin-top:4px;background:#F5F5F7;padding:6px;border-radius:8px">${fechaInfo.texto}</div><div style="margin:6px 0;font-size:13px">${v.origen} → ${v.destino}</div><div style="display:flex;justify-content:space-between"><span>${(v.distanciaTotal||0).toFixed(1)} km • ${v.tiempoMin||0} min</span><b>$${v.precioCobrado||v.precio||0}</b></div>`;
     lista.appendChild(d);
   });
 }
@@ -224,10 +252,11 @@ function renderCobros(){
 window.exportarCobrosPro=()=>{
   const tomados = cacheViajes.filter(v=>['tomado','completado','finalizado'].includes(v.estado));
   if(tomados.length===0) return alert("No hay cobros");
-  let csv="Fecha,Conductor,Cliente,Telefono,Origen,Destino,Km,Tiempo,Precio Cobrado,Factor\n";
+  let csv="Fecha Programada,Fecha Solicitud,Conductor,Cliente,Telefono,Origen,Destino,Km,Tiempo,Precio Cobrado,Factor,Es Nocturna\n";
   tomados.forEach(v=>{
-    const fecha = v.tomadoEn? new Date(v.tomadoEn).toLocaleString('es-MX') : '';
-    csv+=`"${fecha}","${(v.conductorNombre||'').replace(/"/g,'')}","${(v.cliente||'').replace(/"/g,'')}","${v.telefono||''}","${(v.origen||'').replace(/"/g,'')}","${(v.destino||'').replace(/"/g,'')}","${(v.distanciaTotal||0).toFixed(2)}","${v.tiempoMin||0}","${v.precioCobrado||v.precio||0}","${v.tarifaUsada?.factor_demanda||1}"\n`;
+    const fechaProg = v.fechaHoraProgramada? new Date(v.fechaHoraProgramada).toLocaleString('es-MX') : 'Inmediato';
+    const fechaSol = v.creado? new Date(v.creado.seconds*1000).toLocaleString('es-MX') : '';
+    csv+=`"${fechaProg}","${fechaSol}","${(v.conductorNombre||'').replace(/"/g,'')}","${(v.cliente||'').replace(/"/g,'')}","${v.telefono||''}","${(v.origen||'').replace(/"/g,'')}","${(v.destino||'').replace(/"/g,'')}","${(v.distanciaTotal||0).toFixed(2)}","${v.tiempoMin||0}","${v.precioCobrado||v.precio||0}","${v.tarifaUsada?.factor_demanda||1}","${v.esNocturna? 'SI':'NO'}"\n`;
   });
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
