@@ -13,22 +13,8 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 .iphone{width:100%;max-width:430px;background:var(--bg);min-height:100vh;position:relative;box-shadow:0 0 0 1px #e5e5e5, 0 20px 60px rgba(0,0,0,.15);overflow:hidden}
 .header{background:var(--azul);color:#C5A880;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .logo-wrap{display:flex;align-items:center;gap:10px}
-.logo{
-  width:40px;height:40px;
-  background:#fff;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  border:2px solid #C5A880;
-  flex-shrink:0;
-  overflow:hidden;
-  padding:3px;
-}
-.logo img{
-  width:100%;height:100%;
-  object-fit:contain;
-  display:block;
-  border-radius:50%;
-}
+.logo{width:40px;height:40px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #C5A880;flex-shrink:0;overflow:hidden;padding:3px}
+.logo img{width:100%;height:100%;object-fit:contain;display:block;border-radius:50%}
 .brand{font-weight:900;letter-spacing:1px;font-size:15px}
 .content{padding:16px 16px 100px}
 .title{font-size:26px;font-weight:800;letter-spacing:-.7px;margin:10px 4px 6px}
@@ -55,8 +41,9 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 .dot-o{width:16px;height:16px;background:var(--azul);border-radius:50%;border:3px solid #E5EFFF;flex-shrink:0;margin-top:2px}
 .dot-d{width:16px;height:16px;background:var(--naranja);border-radius:50%;border:3px solid #FFEAD1;flex-shrink:0;margin-top:2px}
 .btn-tomar{flex:1;height:56px;padding:0 18px;background:#111;color:#fff;border:0;border-radius:14px;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center}
+.btn-rechazar{flex:1;height:56px;padding:0 18px;background:#fff;color:#FF3B30;border:2px solid #FF3B30;border-radius:14px;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center}
 .btn-finalizar{flex:1;height:56px;padding:0 18px;background:var(--azul);color:#C5A880;border:2px solid #C5A880;border-radius:14px;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center}
-.btn-tomar:active,.btn-finalizar:active{transform:scale(.97)}
+.btn-tomar:active,.btn-finalizar:active,.btn-rechazar:active{transform:scale(.97)}
 .btn-maps-icon{width:56px;height:56px;min-width:56px;min-height:56px;max-width:56px;max-height:56px;background:#fff;border:2px solid #0A1931;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .btn-wsp-icon{width:56px;height:56px;min-width:56px;min-height:56px;max-width:56px;max-height:56px;background:#25D366;border:2px solid #25D366;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .btn-maps-icon:active,.btn-wsp-icon:active{transform:scale(.95)}
@@ -217,6 +204,7 @@ async function render(){
     const precioFijo = v.precio || v.precioCliente || v.precioEstimado || calcularPrecio(distOD);
     const horaHtml = v.fechaHoraProgramada? `<div class="hora-pill prog">⏰ ${new Date(v.fechaHoraProgramada).toLocaleString('es-MX',{dateStyle:'short', timeStyle:'short'})}</div>` : `<div class="hora-pill ahora">🔥 AHORA • A ${distCO? distCO.toFixed(1)+' km de ti' : 'cerca'}</div>`;
     const card=document.createElement('div'); card.className='card'; card.dataset.tipo="pendiente";
+    // SOLO TOMAR Y RECHAZAR - SIN MAPS NI WSP
     card.innerHTML=`
       ${horaHtml}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="cliente">${v.cliente||'Cliente'}</span><span class="tel">${v.telefono||''}</span></div>
@@ -229,14 +217,27 @@ async function render(){
       </div>
       <div class="row-acciones">
         <button class="btn-tomar">Tomar viaje</button>
-        <button class="btn-maps-icon btn-nav-pend"><svg width="22" height="22" viewBox="0 0 24 24" fill="#0A84FF" stroke="#0A84FF" stroke-width="2" stroke-linejoin="round"><path d="M3 11L22 2L13 21L11 13L3 11Z"/></svg></button>
+        <button class="btn-rechazar">Rechazar</button>
       </div>
     `;
-    card.querySelector('.btn-nav-pend').onclick=()=>abrirNavegacion(v);
     card.querySelector('.btn-tomar').onclick=async()=>{
       if(viajesTomados.length>0) return alert("Ya tienes un viaje en curso. Finalízalo primero.");
       if(!conductorData) return alert("Cargando datos del conductor...");
       await updateDoc(doc(db,"servicios_prueba",v.id),{ estado:"tomado", tomadoEn:new Date().toISOString(), conductorNombre:conductorData.nombre, conductorId: conductorData.uid, distanciaConductorOrigen:distCO, distanciaOrigenDestino:distOD, distanciaTotal:distOD, precioCobrado:precioFijo, tarifaKm:tarifa.por_km, tarifaUsada:tarifa, conductorLat:conductorCoords?.lat||null, conductorLng:conductorCoords?.lng||null, vistoPorAdmin:false });
+    };
+    card.querySelector('.btn-rechazar').onclick=async()=>{
+      if(!confirm(`¿Rechazar viaje de ${v.cliente||'Cliente'}?\nSe avisará al cliente: No hay conductores disponibles.`)) return;
+      try{
+        await updateDoc(doc(db,"servicios_prueba",v.id),{ 
+          estado:"sin_conductores",
+          mensajeCliente:"No hay conductores disponibles por el momento. Intenta de nuevo en unos minutos.",
+          rechazadoPor: conductorData?.uid || null,
+          rechazadoEn: new Date().toISOString(),
+          rechazadoNombre: conductorData?.nombre || "conductor",
+          vistoPorCliente:false,
+          vistoPorAdmin:false
+        });
+      }catch(e){ alert("Error al rechazar: "+e.message); }
     };
     lista.appendChild(card);
   }
