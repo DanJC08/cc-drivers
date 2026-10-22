@@ -2,33 +2,56 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CC Conductores</title>
-
-<!-- PWA -->
-<meta name="theme-color" content="#0A1931">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="../assets/icons/icon-512.png">
-
-<!-- ESTILOS CONDUCTORES -->
 <link rel="stylesheet" href="../assets/css/conductor.css">
-<link rel="stylesheet" href="./css/login.css">
+<link rel="stylesheet" href="../assets/css/login.css">
 </head>
-<body class="body-login">
-
+<body class="login-body">
 <div class="login-card">
-  <div class="logo-lobos">CC</div>
-  <h1>Conductores</h1>
-  <p class="sub">Acceso exclusivo Los Lobos</p>
-
-  <input id="correo" type="email" placeholder="Correo de conductor">
+  <img src="../assets/icons/icon-512.png" alt="CC Drivers" class="login-logo">
+  <h1>CC Conductores</h1>
+  <p>Inicia sesión</p>
+  <input id="correo" type="email" placeholder="Correo">
   <input id="pass" type="password" placeholder="Contraseña">
-  <button id="btn" class="btn-primary">Entrar</button>
-
-  <a class="link-sec" href="./registro-conductores.html">¿No tienes cuenta? Crear cuenta</a>
+  <button id="btn">Entrar</button>
+  <a href="./registro-conductores.html" class="login-link">Crear cuenta</a>
   <div id="msg"></div>
 </div>
-
-<script type="module" src="./js/login.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyChsXZQJMSSU2iYm2WgbQUO_dnzNPzT3kI",authDomain:"cc-drivers.firebaseapp.com",projectId:"cc-drivers",storageBucket:"cc-drivers.firebasestorage.app",messagingSenderId:"1052687152920",appId:"1:1052687152920:web:3b0f29e77fc51f4162d06d"};
+const app=initializeApp(firebaseConfig); const auth=getAuth(app); const db=getFirestore(app);
+onAuthStateChanged(auth, async u=>{
+  if(u){
+    const s=await getDoc(doc(db,"conductores",u.uid));
+    if(s.exists() && s.data().estado==="aprobado") location.href="./conductores-app.html";
+  }
+});
+document.getElementById('btn').onclick=async()=>{
+  const c=document.getElementById('correo').value.trim();
+  const p=document.getElementById('pass').value.trim();
+  const m=document.getElementById('msg');
+  const b=document.getElementById('btn');
+  if(!c||!p){m.textContent="Completa los campos";return;}
+  b.disabled=true; b.textContent="Verificando...";
+  try{
+    const cred=await signInWithEmailAndPassword(auth,c,p);
+    const snap=await getDoc(doc(db,"conductores",cred.user.uid));
+    if(!snap.exists()){m.textContent="No tienes perfil de conductor"; b.disabled=false; b.textContent="Entrar"; return;}
+    if(snap.data().estado==="pendiente"){m.textContent="⏳ Pendiente de aprobación"; b.disabled=false; b.textContent="Entrar"; return;}
+    if(snap.data().estado==="bloqueado"){m.textContent="🚫 Cuenta bloqueada"; b.disabled=false; b.textContent="Entrar"; return;}
+    localStorage.setItem("uidConductor",cred.user.uid);
+    localStorage.setItem("nombreConductor",snap.data().nombre||"");
+    location.href="./conductores-app.html";
+  }catch(e){m.textContent="Correo o contraseña incorrectos"; b.disabled=false; b.textContent="Entrar";}
+};
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+</script>
 </body>
 </html>
