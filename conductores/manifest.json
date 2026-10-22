@@ -1,0 +1,19 @@
+{
+  "name": "CC Conductores",
+  "short_name": "CC Conductores",
+  "description": "App para conductores CC",
+  "id": "/CC-DRIVERS/conductores/",
+  "start_url": "/CC-DRIVERS/conductores/login.html",
+  "scope": "/CC-DRIVERS/conductores/",
+  "display": "standalone",
+  "background_color": "#0A1931",
+  "theme_color": "#0A1931",
+  "icons": [
+    {
+      "src": "../assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
