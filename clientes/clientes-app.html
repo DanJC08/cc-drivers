@@ -1,45 +1,28 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>CC VIAJES</title>
-<meta name="theme-color" content="#000000">
-<link rel="manifest" href="./manifest.json">
-<link rel="icon" href="cc-drivers/assets/icons/icon-512.png">
-<link rel="apple-touch-icon" href="cc-drivers/assets/icons/icon-512.png">
-<link rel="stylesheet" href="cc-drivers/assets/css/clientes.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CC Drivers - Cliente</title>
+  
+  <!-- RUTAS CORREGIDAS -->
+  <link rel="stylesheet" href="../assets/css/clientes.css?v=4">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="../assets/icons/icon-512.png">
 </head>
 <body>
-<div class="iphone">
-  <div class="header"><div class="logo"><img src="cc-drivers/assets/icons/icon-512.png" alt="CC"></div>VIAJES</div>
-  <div class="content">
-    <div class="tit">¿A dónde<br><span>vamos hoy?</span></div>
-    <div style="font-size:12px;color:#8E8E93;margin:-12px 0 14px 4px" id="gpsInfo">📍 Detectando tu ubicación...</div>
-    <div class="wrap">
-      <div class="pill"><span>●</span><input id="origen" placeholder="¿Dónde te recogemos?" autocomplete="off"></div>
-      <div id="sug-origen" class="sugerencias"></div>
-      <div id="ultimaDireccionChip" style="display:none;margin:8px 4px 0"></div>
-    </div>
-    <div class="wrap"><div class="pill"><span>📍</span><input id="destino" placeholder="¿A dónde vas?" autocomplete="off"></div><div id="sug-destino" class="sugerencias"></div></div>
-    <div id="precioBox" class="precioBox">
-      <div><small id="precioDetalle">-- min sin tráfico</small><b id="precioTotal">$--</b></div>
-      <div style="text-align:right"><small>Tarifa estimada</small></div>
-    </div>
-    <div class="wrap"><div class="pill"><input type="text" id="fechaHora" placeholder="¿A qué hora? (ahora si lo dejas vacío)"></div></div>
-    <div class="card">
-      <input id="nombre" placeholder="Tu nombre">
-      <input id="telefono" placeholder="Tu celular" inputmode="numeric">
-      <div id="privacidadBox" class="priv-box">
-        <input type="checkbox" id="chkPriv">
-        <label for="chkPriv">Acepto el <a href="./aviso-privacidad.html" target="_blank">Aviso de Privacidad</a></label>
-      </div>
-      <div id="privacidadOk" class="priv-ok">✓ Aviso aceptado</div>
-      <button id="btn" class="btn">Solicitar Viaje</button>
-      <div id="estado"></div>
-    </div>
+  <div id="app">
+    <!-- tu contenido de clientes-app aquí -->
+    <h1>Solicitar viaje</h1>
+    <button id="btnViaje">Solicitar conductor</button>
   </div>
-</div>
-<script type="module" src="cc-drivers/assets/js/clientes.js"></script>
+
+  <script type="module" src="../assets/js/clientes.js?v=4"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
 </body>
 </html>
