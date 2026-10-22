@@ -1,2 +1,22 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0; url=./clientes/clientes-app.html"><script>location.replace("./clientes/clientes-app.html")</script></head><body></body></html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CC VIAJES</title>
+<script>
+  // Forzar que no use caché del SW viejo
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
+  }
+  location.replace("./clientes/clientes-app.html?v=1000");
+</script>
+<meta http-equiv="refresh" content="0; url=./clientes/clientes-app.html?v=1000">
+</head>
+<body style="font-family:sans-serif;padding:20px">
+  Redirigiendo a CC VIAJES...
+  <a href="./clientes/clientes-app.html?v=1000">Click aquí si no redirige</a>
+</body>
+</html>
