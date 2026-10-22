@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CC Conductores</title>
+<link rel="icon" type="image/png" href="../assets/icons/icon-512.png">
+<link rel="apple-touch-icon" href="../assets/icons/icon-512.png">
+<link rel="stylesheet" href="../assets/css/conductor.css">
+<link rel="manifest" href="./manifest.json">
+</head>
+<body>
+<div class="iphone">
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo"><img src="../assets/icons/icon-512.png" alt="CC"></div>
+      <span class="brand">CONDUCTORES</span>
+    </div>
+    <div class="badge" id="contador">0</div>
+  </div>
+  <div class="content">
+    <div class="title">Viajes nuevos</div>
+    <div class="sub" id="subInfo">Cargando...</div>
+    <div class="top-pill"><div class="live"><div class="dot"></div> Escuchando</div><span id="status">Conectado</span></div>
+    <div id="lista"><div class="vacio"><div>📡</div>Esperando viajes...</div></div>
+  </div>
+  <div class="tab-bar"><a href="#" id="logout">Cerrar sesión</a><a href="../clientes/index.html">← Cliente</a></div>
+</div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
