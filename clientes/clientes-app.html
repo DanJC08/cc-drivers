@@ -9,19 +9,6 @@
 <link rel="icon" href="../assets/icons/icon-512.png">
 <link rel="apple-touch-icon" href="../assets/icons/icon-512.png">
 <link rel="stylesheet" href="../assets/css/clientes.css">
-<style>
-  .sugerencia-destino {
-    display:none;
-    margin: 8px 4px 0 4px;
-    background:#F2F2F7;
-    border-radius:12px;
-    padding:10px 12px;
-    font-size:13px;
-    cursor:pointer;
-  }
-  .sugerencia-destino b{color:#000}
-  .sugerencia-destino small{color:#8E8E93}
-</style>
 </head>
 <body>
 <div class="iphone">
@@ -31,61 +18,40 @@
     <div style="font-size:12px;color:#8E8E93;margin:-12px 0 14px 4px" id="gpsInfo">📍 Detectando tu ubicación...</div>
     <div class="wrap">
       <div class="pill"><span>●</span><input id="origen" placeholder="¿Dónde te recogemos?"></div>
+      <div id="sug-origen" class="sugerencias"></div>
+
       <div class="pill"><span>◆</span><input id="destino" placeholder="¿A dónde vas?"></div>
-      <!-- AQUI APARECE EL DESTINO ANTERIOR -->
-      <div id="sugDestino" class="sugerencia-destino" onclick="usarSugerido()"></div>
+      <div id="sug-destino" class="sugerencias"></div>
+
+      <!-- CORRECCIÓN: AHORA EL CHIP APARECE EN DESTINO -->
+      <div id="ultimaDireccionChip" style="display:none;margin-top:10px"></div>
+
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <input id="nombre" placeholder="Tu nombre" class="input-mini" style="flex:1">
+        <input id="telefono" placeholder="Celular 10 dígitos" class="input-mini" style="flex:1" type="tel">
+      </div>
+
+      <input id="fechaHora" type="text" placeholder="Ahora (toca para programar)" class="input-mini" style="width:100%;margin-top:8px">
+
+      <div id="precioBox" style="display:none;margin-top:12px;background:#F2F2F7;border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <small id="precioDetalle" style="color:#8E8E93"></small><br>
+          <b id="precioTotal" style="font-size:18px"></b>
+        </div>
+        <span>💰</span>
+      </div>
+
+      <div id="privacidadBox" style="margin-top:12px;font-size:11px;display:flex;gap:6px">
+        <input type="checkbox" id="chkPriv">
+        <label for="chkPriv">Acepto <a href="../privacidad.html" target="_blank">Aviso de Privacidad</a></label>
+      </div>
+      <div id="privacidadOk" style="display:none;margin-top:8px;font-size:11px;color:green">✅ Privacidad aceptada</div>
+
+      <button id="btn" style="margin-top:14px;width:100%;background:#000;color:#fff;border:0;border-radius:14px;padding:14px;font-weight:800">Solicitar Viaje</button>
+      <div id="estado" style="display:none;margin-top:12px"></div>
     </div>
   </div>
 </div>
-
-<script>
-// Lógica para sugerir el destino anterior en DESTINO
-const inputDestino = document.getElementById('destino');
-const sugDiv = document.getElementById('sugDestino');
-
-function cargarUltimoDestino(){
-  // 1. Busca en localStorage lo que guardaste del último viaje
-  const ultimo = localStorage.getItem('ultimo_destino') || localStorage.getItem('ultimoDestino');
-  
-  // Si tu app.js ya guarda en Firebase, también lo puede tomar de ahí
-  // Por ahora usa localStorage
-  
-  if(ultimo && ultimo.trim() !== ""){
-    sugDiv.innerHTML = `<small>Último destino:</small><br><b>◆ ${ultimo}</b> <small>• tocar para usar</small>`;
-    sugDiv.style.display = 'block';
-    // También lo pone como placeholder
-    inputDestino.placeholder = ultimo;
-    inputDestino.dataset.sugerido = ultimo;
-  }
-}
-
-function usarSugerido(){
-  const val = inputDestino.dataset.sugerido;
-  if(val){
-    inputDestino.value = val;
-    sugDiv.style.display = 'none';
-    inputDestino.focus();
-  }
-}
-
-// Cuando el cliente pide viaje, guarda ese destino como el último
-// Esta función la debes llamar en tu app.js cuando hace el pedido
-function guardarDestinoActual(){
-  const dest = inputDestino.value.trim();
-  if(dest) localStorage.setItem('ultimo_destino', dest);
-}
-
-// Exponer para que tu app.js la pueda usar
-window.guardarDestinoActual = guardarDestinoActual;
-
-cargarUltimoDestino();
-
-// Ocultar sugerencia si ya escribe
-inputDestino.addEventListener('input', ()=>{
-  if(inputDestino.value.length > 0) sugDiv.style.display = 'none';
-  else if(inputDestino.dataset.sugerido) sugDiv.style.display = 'block';
-});
-</script>
 
 <script src="./js/app.js" type="module"></script>
 </body>
