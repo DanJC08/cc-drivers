@@ -17,4 +17,32 @@
     <div class="tit">¿A dónde<br><span>vamos hoy?</span></div>
     <div style="font-size:12px;color:#8E8E93;margin:-12px 0 14px 4px" id="gpsInfo">📍 Detectando tu ubicación...</div>
     <div class="wrap">
-      <div class="pill"><span>●</span><input id="origen" placeholder="¿Dónde te recogemos?" autoco
+      <div class="pill"><span>●</span><input id="origen" placeholder="¿Dónde te recogemos?" autocomplete="off"></div>
+      <div id="sug-origen" class="sugerencias"></div>
+      <div id="ultimaDireccionChip" style="display:none;margin:8px 4px 0"></div>
+    </div>
+    <div class="wrap"><div class="pill"><span>📍</span><input id="destino" placeholder="¿A dónde vas?" autocomplete="off"></div><div id="sug-destino" class="sugerencias"></div></div>
+    <div id="precioBox" class="precioBox">
+      <div><small id="precioDetalle">-- min sin tráfico</small><b id="precioTotal">$--</b></div>
+      <div style="text-align:right"><small>Tarifa estimada</small></div>
+    </div>
+    <div class="wrap"><div class="pill"><input type="text" id="fechaHora" placeholder="¿A qué hora? (ahora si lo dejas vacío)"></div></div>
+    <div class="card">
+      <input id="nombre" placeholder="Tu nombre">
+      <input id="telefono" placeholder="Tu celular" inputmode="numeric">
+      <div id="privacidadBox" class="priv-box">
+        <input type="checkbox" id="chkPriv">
+        <label for="chkPriv">Acepto el <a href="./aviso-privacidad.html" target="_blank">Aviso de Privacidad</a></label>
+      </div>
+      <div id="privacidadOk" class="priv-ok">✓ Aviso aceptado</div>
+      <button id="btn" class="btn">Solicitar Viaje</button>
+      <div id="estado"></div>
+    </div>
+  </div>
+</div>
+<script type="module" src="../assets/js/clientes.js"></script>
+<script>
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+</script>
+</body>
+</html>
