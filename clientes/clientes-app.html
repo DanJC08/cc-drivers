@@ -18,40 +18,48 @@
     <div style="font-size:12px;color:#8E8E93;margin:-12px 0 14px 4px" id="gpsInfo">📍 Detectando tu ubicación...</div>
     <div class="wrap">
       <div class="pill"><span>●</span><input id="origen" placeholder="¿Dónde te recogemos?"></div>
-      <div id="sug-origen" class="sugerencias"></div>
-
       <div class="pill"><span>◆</span><input id="destino" placeholder="¿A dónde vas?"></div>
-      <div id="sug-destino" class="sugerencias"></div>
-
-      <!-- CORRECCIÓN: AHORA EL CHIP APARECE EN DESTINO -->
-      <div id="ultimaDireccionChip" style="display:none;margin-top:10px"></div>
-
-      <div style="margin-top:14px;display:flex;gap:8px">
-        <input id="nombre" placeholder="Tu nombre" class="input-mini" style="flex:1">
-        <input id="telefono" placeholder="Celular 10 dígitos" class="input-mini" style="flex:1" type="tel">
-      </div>
-
-      <input id="fechaHora" type="text" placeholder="Ahora (toca para programar)" class="input-mini" style="width:100%;margin-top:8px">
-
-      <div id="precioBox" style="display:none;margin-top:12px;background:#F2F2F7;border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <small id="precioDetalle" style="color:#8E8E93"></small><br>
-          <b id="precioTotal" style="font-size:18px"></b>
-        </div>
-        <span>💰</span>
-      </div>
-
-      <div id="privacidadBox" style="margin-top:12px;font-size:11px;display:flex;gap:6px">
-        <input type="checkbox" id="chkPriv">
-        <label for="chkPriv">Acepto <a href="../privacidad.html" target="_blank">Aviso de Privacidad</a></label>
-      </div>
-      <div id="privacidadOk" style="display:none;margin-top:8px;font-size:11px;color:green">✅ Privacidad aceptada</div>
-
-      <button id="btn" style="margin-top:14px;width:100%;background:#000;color:#fff;border:0;border-radius:14px;padding:14px;font-weight:800">Solicitar Viaje</button>
-      <div id="estado" style="display:none;margin-top:12px"></div>
     </div>
   </div>
 </div>
+
+<!-- SONIDO 01 -->
+<audio id="noti01" src="../assets/sounds/mk64_toad01.wav" preload="auto"></audio>
+
+<script>
+// Para conductores - función de alerta
+const audioToad = document.getElementById('noti01');
+
+function sonarNuevoViaje(datosViaje = null) {
+  audioToad.currentTime = 0;
+  audioToad.loop = true;
+  audioToad.play().catch(()=>{});
+  if (navigator.vibrate) navigator.vibrate([400, 100, 400, 100, 400]);
+  
+  if (Notification && Notification.permission === "granted") {
+    new Notification("🚨 Nuevo Viaje CC", {
+      body: datosViaje ? `${datosViaje.origen} → ${datosViaje.destino}` : "Tienes un nuevo viaje!",
+      icon: "../assets/icons/icon-512.png"
+    });
+  }
+}
+
+function detenerSonido() {
+  audioToad.pause();
+  audioToad.currentTime = 0;
+  if (navigator.vibrate) navigator.vibrate(0);
+}
+
+// Pedir permiso al abrir
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+
+// Habilitar audio con primer toque (Android lo bloquea si no)
+document.addEventListener('click', () => {
+  audioToad.play().then(()=>{ audioToad.pause(); }).catch(()=>{});
+}, {once: true});
+</script>
 
 <script src="./js/app.js" type="module"></script>
 </body>
