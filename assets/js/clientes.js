@@ -17,25 +17,10 @@ const chipUltima = document.getElementById('ultimaDireccionChip');
 let origenCoords = null, destinoCoords = null, userCoords = null, unsubViaje = null;
 let tarifa = {base:20, por_km:10, por_min:1.5, minimo:50, factor_demanda:1.1, extra_nocturno:15, extra_lluvia:0};
 let ultimoCalculo = null, ultimaCoordsGuardada = null;
-// CORRECCIÓN: YA NO BORRAMOS NADA AL INICIO
+localStorage.removeItem('cc_ultimo_origen'); localStorage.removeItem('cc_ultimo_destino'); localStorage.removeItem('ultimo_precio'); sessionStorage.clear();
 origenInput.value = ''; destinoInput.value = '';
-function mostrarChipUltimaDireccion(){ 
-  const ultima = localStorage.getItem('cc_ultimo_destino'); 
-  const coordsStr = localStorage.getItem('cc_ultima_coords_destino'); 
-  if(!ultima){ chipUltima.style.display='none'; return; } 
-  if(coordsStr){ try{ ultimaCoordsGuardada = JSON.parse(coordsStr); }catch(e){} } 
-  chipUltima.innerHTML = `<div onclick="window.usarUltimaDireccion()" style="background:#fff;border:1px dashed #E5E5EA;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer"><span>🕒</span><div style="flex:1"><small style="color:#8E8E93;display:block;font-size:10px">Último destino</small><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:230px">${ultima}</b></div><span style="color:#FF7A00;font-size:12px;font-weight:800">Usar</span></div>`; 
-  chipUltima.style.display='block'; 
-}
-window.usarUltimaDireccion = ()=>{ 
-  const ultima = localStorage.getItem('cc_ultimo_destino'); 
-  const coordsStr = localStorage.getItem('cc_ultima_coords_destino'); 
-  if(!ultima) return; 
-  destinoInput.value = ultima; 
-  if(coordsStr){ try{ const c = JSON.parse(coordsStr); destinoCoords = c; ultimaCoordsGuardada = c; }catch(e){} }
-  actualizarPrecioUI(); 
-  chipUltima.style.display='none'; 
-};
+function mostrarChipUltimaDireccion(){ const ultima = localStorage.getItem('cc_ultima_direccion'); const coordsStr = localStorage.getItem('cc_ultima_coords'); if(!ultima){ chipUltima.style.display='none'; return; } if(coordsStr){ try{ ultimaCoordsGuardada = JSON.parse(coordsStr); }catch(e){} } chipUltima.innerHTML = `<div onclick="window.usarUltimaDireccion()" style="background:#fff;border:1px dashed #E5E5EA;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer"><span>🕒</span><div style="flex:1"><small style="color:#8E8E93;display:block;font-size:10px">Última dirección</small><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:230px">${ultima}</b></div><span style="color:#FF7A00;font-size:12px;font-weight:800">Usar</span></div>`; chipUltima.style.display='block'; }
+window.usarUltimaDireccion = ()=>{ const ultima = localStorage.getItem('cc_ultima_direccion'); if(!ultima) return; origenInput.value = ultima; if(ultimaCoordsGuardada) origenCoords = ultimaCoordsGuardada; actualizarPrecioUI(); chipUltima.style.display='none'; };
 mostrarChipUltimaDireccion();
 fechaHoraInput.addEventListener('focus', ()=>{ fechaHoraInput.type='datetime-local'; setTimeout(()=>fechaHoraInput.showPicker&&fechaHoraInput.showPicker(),100); });
 fechaHoraInput.addEventListener('blur', ()=>{ if(!fechaHoraInput.value) fechaHoraInput.type='text'; });
@@ -66,9 +51,7 @@ document.getElementById('btn').onclick=async()=>{
     if(!origenCoords){ const r=await buscarOSM(o); if(!r[0]) throw "Origen no encontrado"; origenCoords={lat:parseFloat(r[0].lat), lng:parseFloat(r[0].lon)}; }
     if(!destinoCoords){ const r=await buscarOSM(d); if(!r[0]) throw "Destino no encontrado"; destinoCoords={lat:parseFloat(r[0].lat), lng:parseFloat(r[0].lon)}; }
     if(!ultimoCalculo) actualizarPrecioUI(); const dist = ultimoCalculo?.distKm || calcDistKm(origenCoords, destinoCoords) * 1.3; const calc = calcularPrecioFinal(dist);
-    // CORRECCIÓN: AHORA GUARDAMOS DESTINO
-    localStorage.setItem('cc_ultimo_destino', d); 
-    if(destinoCoords) localStorage.setItem('cc_ultima_coords_destino', JSON.stringify(destinoCoords));
+    localStorage.setItem('cc_ultima_direccion', o); if(origenCoords) localStorage.setItem('cc_ultima_coords', JSON.stringify(origenCoords));
     const docRef = await addDoc(collection(db,"servicios_prueba"),{ cliente:nombre, telefono:tel, origen:o, destino:d, origenLat:origenCoords.lat, origenLng:origenCoords.lng, destinoLat:destinoCoords.lat, destinoLng:destinoCoords.lng, distanciaOrigenDestino:dist, distanciaTotal:dist, precioEstimado: calc.precio, precioFinal: calc.precio, tiempoMin: calc.minutos, tarifaUsada: tarifa, extras: calc.extras.join(", "), esNocturna: esTarifaNocturna(), estado: fechaHoraInput.value?'programado':'pendiente', fechaHoraProgramada: fechaHoraInput.value? new Date(fechaHoraInput.value).toISOString():null, creado:serverTimestamp(), clienteLat:userCoords?.lat||null, clienteLng:userCoords?.lng||null, aceptoPrivacidad: true });
     estado.innerHTML = `✅ Viaje enviado<br><small>💰 $${calc.precio}${esTarifaNocturna()?' (nocturna)':''} - Buscando conductor...</small>`; estado.className='ok'; estado.style.display='block'; btn.textContent='Buscando conductor...';
     unsubViaje = onSnapshot(doc(db, "servicios_prueba", docRef.id), (snap)=>{
