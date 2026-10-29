@@ -33,16 +33,35 @@ let unsubTomados = null;
 let ultimoUpdate = 0; 
 let watchId = null;
 
-// RUTA CORREGIDA A ASSETS
-const audio = new Audio('../../assets/sounds/mk64_toad01.wav'); 
-audio.preload='auto'; audio.volume = 1.0; 
+// === AUDIO 01 CORREGIDO ===
+const audio = new Audio('../assets/sounds/mk64_toad01.wav'); 
+audio.preload='auto'; 
+audio.volume = 1.0;
+audio.loop = true; 
 let audioListo=false;
 
-function desbloquearAudio(){ if(audioListo) return; audio.play().then(()=>{audio.pause();audio.currentTime=0;audioListo=true;}).catch(()=>{}); }
+function desbloquearAudio(){ 
+  if(audioListo) return; 
+  audio.play().then(()=>{audio.pause();audio.currentTime=0;audioListo=true;}).catch(()=>{}); 
+}
 document.addEventListener('click', desbloquearAudio, {once:true}); 
 document.addEventListener('touchstart', desbloquearAudio, {once:true});
 
-function sonar(){ desbloquearAudio(); audio.currentTime=0; audio.play().catch(()=>{}); if(navigator.vibrate) navigator.vibrate([400,100,400,100,400]); let o=document.title; document.title="🔥 ¡NUEVO VIAJE! 🔥"; setTimeout(()=>document.title=o,2000); }
+function sonar(){ 
+  desbloquearAudio(); 
+  audio.currentTime=0; 
+  audio.play().catch(()=>{}); 
+  if(navigator.vibrate) navigator.vibrate([400,100,400,100,400]); 
+  let o=document.title; 
+  document.title="🔥 ¡NUEVO VIAJE! 🔥"; 
+  setTimeout(()=>document.title=o,2000); 
+}
+
+function detenerSonido(){
+  audio.pause();
+  audio.currentTime = 0;
+  if(navigator.vibrate) navigator.vibrate(0);
+}
 
 document.getElementById('logout').onclick=async()=>{ 
   if(watchId) navigator.geolocation.clearWatch(watchId); 
@@ -150,6 +169,7 @@ async function render(){
     };
     card.querySelector('.btn-finalizar').onclick=async()=>{
       if(!confirm(`¿Finalizar viaje de ${v.cliente}?\n$${precio} MXN`)) return;
+      detenerSonido();
       if(watchId) navigator.geolocation.clearWatch(watchId);
       await updateDoc(doc(db,"servicios_prueba",v.id),{ estado:"finalizado", finalizadoEn:new Date().toISOString() });
     };
@@ -178,6 +198,7 @@ async function render(){
       </div>
     `;
     card.querySelector('.btn-tomar').onclick=async()=>{
+      detenerSonido();
       if(viajesTomados.length>0) return alert("Ya tienes un viaje en curso. Finalízalo primero.");
       if(!conductorData) return alert("Cargando datos del conductor...");
       await updateDoc(doc(db,"servicios_prueba",v.id),{ estado:"tomado", tomadoEn:new Date().toISOString(), conductorNombre:conductorData.nombre, conductorId: conductorData.uid, distanciaConductorOrigen:distCO, distanciaOrigenDestino:distOD, distanciaTotal:distOD, precioCobrado:precioFijo, tarifaKm:tarifa.por_km, tarifaUsada:tarifa, conductorLat:conductorCoords?.lat||null, conductorLng:conductorCoords?.lng||null, vistoPorAdmin:false });
@@ -185,6 +206,7 @@ async function render(){
     card.querySelector('.btn-rechazar').onclick=async()=>{
       if(!confirm(`¿Rechazar viaje de ${v.cliente||'Cliente'}?\nSe avisará al cliente: No hay conductores disponibles.`)) return;
       try{
+        detenerSonido();
         await updateDoc(doc(db,"servicios_prueba",v.id),{ 
           estado:"sin_conductores",
           mensajeCliente:"No hay conductores disponibles por el momento. Intenta de nuevo en unos minutos.",
@@ -198,4 +220,4 @@ async function render(){
     };
     lista.appendChild(card);
   }
-    }
+}
