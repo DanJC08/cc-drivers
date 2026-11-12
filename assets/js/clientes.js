@@ -15,7 +15,7 @@ const privacidadOk = document.getElementById('privacidadOk');
 const fechaHoraInput = document.getElementById('fechaHora');
 const chipUltima = document.getElementById('ultimaDireccionChip');
 let origenCoords = null, destinoCoords = null, userCoords = null, unsubViaje = null;
-let tarifa = {base:20, por_km:10, por_min:1.5, minimo:50, factor_demanda:1.1, extra_nocturno:15, extra_lluvia:0};
+let tarifa = {base:20, por_km:10, por_min:1.5, minimo:50, factor_demanda:1.0, extra_nocturno:15, extra_lluvia:0};
 let ultimoCalculo = null, ultimaCoordsGuardada = null;
 localStorage.removeItem('cc_ultimo_origen'); localStorage.removeItem('cc_ultimo_destino'); localStorage.removeItem('ultimo_precio'); sessionStorage.clear();
 origenInput.value = ''; destinoInput.value = '';
