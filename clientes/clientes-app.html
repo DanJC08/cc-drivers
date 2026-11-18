@@ -16,12 +16,20 @@
   <div class="content">
     <div class="tit">¿A dónde<br><span>vamos hoy?</span></div>
     <div style="font-size:12px;color:#8E8E93;margin:-12px 0 14px 4px" id="gpsInfo">📍 Detectando tu ubicación...</div>
+
+    <!-- ORIGEN - SIN CHIP -->
     <div class="wrap">
       <div class="pill"><span>●</span><input id="origen" placeholder="¿Dónde te recogemos?" autocomplete="off"></div>
       <div id="sug-origen" class="sugerencias"></div>
+    </div>
+
+    <!-- DESTINO - CON CHIP DE ULTIMA DIRECCION -->
+    <div class="wrap">
+      <div class="pill"><span>📍</span><input id="destino" placeholder="¿A dónde vas?" autocomplete="off"></div>
+      <div id="sug-destino" class="sugerencias"></div>
       <div id="ultimaDireccionChip" style="display:none;margin:8px 4px 0"></div>
     </div>
-    <div class="wrap"><div class="pill"><span>📍</span><input id="destino" placeholder="¿A dónde vas?" autocomplete="off"></div><div id="sug-destino" class="sugerencias"></div></div>
+
     <div id="precioBox" class="precioBox">
       <div><small id="precioDetalle">-- min sin tráfico</small><b id="precioTotal">$--</b></div>
       <div style="text-align:right"><small>Tarifa estimada</small></div>
