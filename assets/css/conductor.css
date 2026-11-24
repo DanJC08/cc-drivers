@@ -112,3 +112,8 @@ body{margin:0;background:var(--bg);display:flex;justify-content:center;min-heigh
 }
 .tab-bar a{color:#111;text-decoration:none;font-size:13px;font-weight:600;opacity:.5}
 .tab-bar a.activo{opacity:1;font-weight:800}
+/* Complemento para las tarjetas - mismo estilo oficial */
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.label{color:#8E8E93;font-size:11px;font-weight:700}
+.precio-row{display:flex;justify-content:space-between;align-items:center;margin-top:2px}
+.precio-row span{font-size:11px;color:#fff;opacity:.7}
